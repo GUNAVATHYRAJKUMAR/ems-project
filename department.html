@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>EMS – Departments</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  #particleCanvas{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  opacity:.45;
+}
+
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+
+  background-image:
+    linear-gradient(rgba(123,110,246,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(123,110,246,.04) 1px,transparent 1px);
+
+  background-size:48px 48px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f1a;--surface:#131629;--surface2:#181c30;--surface3:#1e2340;
+  --border:rgba(255,255,255,0.06);--text:#e2e8f0;--muted:#8492a6;
+  --purple:#7c5cfc;--blue:#3b82f6;--green:#10b981;--amber:#f59e0b;
+  --red:#ef4444;--cyan:#06b6d4;--pink:#ec4899;--orange:#f97316;
+  --radius:14px;
+}
+html,body{height:100%;background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);overflow-x:hidden}
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeUp   {from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn   {from{opacity:0}to{opacity:1}}
+@keyframes slideLeft{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn  {from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
+@keyframes countUp  {from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer  {0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes pulse    {0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.6);opacity:0}}
+@keyframes spin     {to{transform:rotate(360deg)}}
+@keyframes barGrow  {from{width:0}to{width:var(--w)}}
+@keyframes ringFill {from{stroke-dashoffset:283}to{stroke-dashoffset:var(--dash)}}
+@keyframes float    {0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes glow     {0%,100%{box-shadow:0 0 12px var(--gc)}50%{box-shadow:0 0 28px var(--gc),0 0 50px var(--gc)}}
+@keyframes borderAnim{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+
+.anim-fadeUp   {animation:fadeUp   .6s cubic-bezier(.22,1,.36,1) both}
+.anim-fadeIn   {animation:fadeIn   .5s ease both}
+.anim-slideLeft{animation:slideLeft .55s cubic-bezier(.22,1,.36,1) both}
+.anim-scaleIn  {animation:scaleIn  .5s cubic-bezier(.22,1,.36,1) both}
+
+/* ─── NAV ─── */
+nav{height:64px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:24px;position:sticky;top:0;z-index:100;animation:fadeIn .4s ease}
+.brand{display:flex;align-items:center;gap:10px;min-width:160px}
+.brand-icon{width:36px;height:36px;background:linear-gradient(135deg,#7c5cfc,#3b82f6);border-radius:10px;display:grid;place-items:center;font-size:18px;animation:float 3s ease-in-out infinite}
+.brand-text h2{font-size:15px;font-weight:800;letter-spacing:.5px}
+.brand-text p{font-size:10px;color:var(--muted);letter-spacing:.4px}
+.nav-links{display:flex;gap:4px;flex:1;justify-content:center}
+.nav-links a{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;cursor:pointer;transition:all .25s}
+.nav-links a.active{background:linear-gradient(135deg,#7c5cfc22,#3b82f622);color:var(--text)}
+.nav-links a:hover:not(.active){background:var(--surface2);color:var(--text)}
+.nav-right{display:flex;align-items:center;gap:14px;margin-left:auto}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;transition:border-color .2s}
+.search-box:focus-within{border-color:var(--purple)}
+.search-box input{background:none;border:none;outline:none;color:var(--text);font-size:13px;width:160px}
+.search-box input::placeholder{color:var(--muted)}
+.notif-btn{width:36px;height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;display:grid;place-items:center;cursor:pointer;position:relative;transition:all .2s}
+.notif-btn:hover{border-color:var(--purple);transform:scale(1.05)}
+.notif-dot{width:8px;height:8px;background:var(--red);border-radius:50%;position:absolute;top:6px;right:6px;border:2px solid var(--surface)}
+.user-chip{display:flex;align-items:center;gap:9px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:5px 12px 5px 5px;cursor:pointer;transition:all .2s}
+.user-chip:hover{border-color:var(--purple)}
+.user-avatar{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#7c5cfc,#ec4899);display:grid;place-items:center;font-size:12px;font-weight:700}
+.user-info p:first-child{font-size:12px;font-weight:600}
+.user-info p:last-child{font-size:10px;color:var(--muted)}
+
+/* ─── LAYOUT ─── */
+main{padding:28px;display:flex;flex-direction:column;gap:24px;max-width:1400px;margin:0 auto;width:100%}
+
+/* ─── PAGE HEADER ─── */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;animation:fadeUp .5s ease both}
+.page-header h1{font-size:24px;font-weight:800}
+.page-header p{font-size:13px;color:var(--muted);margin-top:3px}
+.header-actions{display:flex;gap:10px}
+.btn-secondary{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 18px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-secondary:hover{border-color:var(--purple);background:var(--surface2)}
+.btn-primary{display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#7c5cfc,#5b3fd4);color:#fff;border:none;border-radius:10px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .25s;position:relative;overflow:hidden}
+.btn-primary::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,.1),transparent);transform:translateX(-100%);transition:transform .5s}
+.btn-primary:hover::after{transform:translateX(100%)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px #7c5cfc44}
+
+/* ─── STAT STRIP ─── */
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;cursor:default;transition:transform .25s,box-shadow .25s}
+.stat-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.4)}
+.stat-card::before{content:'';position:absolute;inset:0;opacity:.07;border-radius:var(--radius)}
+.stat-card.c1::before{background:linear-gradient(135deg,var(--purple),transparent)}
+.stat-card.c2::before{background:linear-gradient(135deg,var(--blue),transparent)}
+.stat-card.c3::before{background:linear-gradient(135deg,var(--green),transparent)}
+.stat-card.c4::before{background:linear-gradient(135deg,var(--amber),transparent)}
+.stat-glow{position:absolute;bottom:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.15;filter:blur(20px)}
+.stat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.stat-icon{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:18px}
+.stat-label{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.3px}
+.stat-value{font-size:32px;font-weight:800;letter-spacing:-1.5px;margin-bottom:4px}
+.stat-change{font-size:12px;font-weight:600}
+.up{color:var(--green)}.down{color:var(--red)}
+
+/* ─── MAIN GRID ─── */
+.main-grid{display:grid;grid-template-columns:1fr 320px;gap:20px}
+
+/* ─── DEPT CARDS GRID ─── */
+.dept-cards-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+
+.dept-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;cursor:pointer;position:relative;overflow:hidden;transition:transform .3s cubic-bezier(.22,1,.36,1),box-shadow .3s,border-color .3s}
+.dept-card:hover{transform:translateY(-6px) scale(1.01);box-shadow:0 20px 50px rgba(0,0,0,.5)}
+/* animated top border */
+.dept-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--c1),var(--c2),var(--c1));background-size:200%;animation:borderAnim 3s linear infinite;opacity:0;transition:opacity .3s}
+.dept-card:hover::before{opacity:1}
+/* glow blob */
+.dept-card::after{content:'';position:absolute;top:-30px;right:-30px;width:100px;height:100px;border-radius:50%;background:var(--c1);opacity:.06;filter:blur(24px);transition:opacity .3s}
+.dept-card:hover::after{opacity:.14}
+
+.dc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.dc-icon-wrap{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:22px;position:relative;transition:transform .3s}
+.dept-card:hover .dc-icon-wrap{transform:scale(1.12) rotate(-4deg)}
+.dc-icon-ping{position:absolute;inset:-4px;border-radius:14px;opacity:0;border:2px solid var(--c1);animation:none}
+.dept-card:hover .dc-icon-ping{animation:pulse 1.4s infinite}
+.dc-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.4px}
+.dc-badge.active{background:#10b98120;color:#10b981}
+.dc-badge.growing{background:#7c5cfc20;color:#7c5cfc}
+
+.dc-name{font-size:15px;font-weight:800;margin-bottom:3px}
+.dc-head{font-size:12px;color:var(--muted)}
+
+.dc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.dc-stat{background:var(--surface2);border-radius:8px;padding:8px;text-align:center}
+.dc-stat .n{font-size:15px;font-weight:800}
+.dc-stat .l{font-size:9px;color:var(--muted);font-weight:600;margin-top:1px;letter-spacing:.3px}
+
+/* animated progress bar */
+.dc-progress-label{display:flex;align-items:center;justify-content:space-between;font-size:11px;margin-bottom:5px}
+.dc-progress-label .lbl{color:var(--muted)}
+.dc-bar-track{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.dc-bar-fill{height:100%;border-radius:3px;width:0;transition:width 1.2s cubic-bezier(.22,1,.36,1)}
+
+.dc-avatars{display:flex;margin-top:12px;align-items:center}
+.dc-avatar{width:26px;height:26px;border-radius:7px;border:2px solid var(--surface);margin-left:-6px;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0}
+.dc-avatar:first-child{margin-left:0}
+.dc-more{font-size:11px;color:var(--muted);margin-left:8px}
+
+/* ─── RIGHT PANEL ─── */
+.right-panel{display:flex;flex-direction:column;gap:16px}
+
+/* ─── CARD BASE ─── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.card-title{font-size:13px;font-weight:700;margin-bottom:14px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.pill{font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 9px;cursor:pointer}
+
+/* ─── ORG CHART MINI ─── */
+.org-root{display:flex;flex-direction:column;align-items:center;gap:0}
+.org-node{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#7c5cfc22,#3b82f622);border:1px solid var(--purple);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;transition:all .2s;cursor:pointer}
+.org-node:hover{background:linear-gradient(135deg,#7c5cfc44,#3b82f644);transform:scale(1.03)}
+.org-dot{width:8px;height:8px;border-radius:50%}
+.org-line{width:2px;height:16px;background:var(--border);margin:0 auto}
+.org-children{display:flex;gap:8px;margin-top:0;position:relative}
+.org-children::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:calc(100% - 40px);height:2px;background:var(--border)}
+.org-child{display:flex;flex-direction:column;align-items:center;gap:0;margin-top:0}
+.org-child-line{width:2px;height:14px;background:var(--border);margin:0 auto}
+.org-child-node{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;white-space:nowrap;cursor:pointer;transition:all .2s}
+.org-child-node:hover{border-color:var(--purple);color:var(--purple)}
+
+/* ─── BUDGET BARS ─── */
+.budget-row{margin-bottom:12px}
+.budget-meta{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.budget-meta .name{font-weight:600}
+.budget-meta .val{color:var(--muted)}
+.budget-track{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.budget-fill{height:100%;border-radius:4px;width:0;transition:width 1.4s cubic-bezier(.22,1,.36,1)}
+
+/* ─── HEADCOUNT CHART ─── */
+.chart-wrap{height:160px;position:relative}
+
+/* ─── RECENT ACTIVITY ─── */
+.act-row{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start}
+.act-icon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:14px;flex-shrink:0}
+.act-text{font-size:12px;flex:1}
+.act-text strong{font-weight:600}
+.act-time{font-size:10px;color:var(--muted);white-space:nowrap;margin-top:2px}
+
+/* ─── DEPT TABLE ─── */
+.dept-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:1px solid var(--border)}
+thead th{padding:11px 14px;font-size:10px;font-weight:700;color:var(--muted);text-align:left;letter-spacing:.5px;text-transform:uppercase}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+tbody td{padding:11px 14px;font-size:12px;vertical-align:middle}
+.td-dept{display:flex;align-items:center;gap:9px}
+.td-icon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:14px;flex-shrink:0}
+.td-name{font-weight:700;font-size:13px}
+.td-head{font-size:11px;color:var(--muted)}
+.health-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
+.health-bar{display:flex;gap:2px}
+.health-seg{width:10px;height:16px;border-radius:3px;transition:opacity .2s}
+tr:hover .health-seg{opacity:.7}
+tr:hover .health-seg.filled{opacity:1}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:#2a2f4a;border-radius:3px}
+
+/* ─── INTERSECTION OBSERVER target ─── */
+.reveal{opacity:0}
+.reveal.visible{opacity:1}
+</style>
+</head>
+<body>
+  <canvas id="particleCanvas"></canvas>
+
+<!-- NAV -->
+<nav>
+  <div class="brand">
+    <div class="brand-icon">👥</div>
+    <div class="brand-text"><h2>EMS</h2><p>Employee Management System</p></div>
+  </div>
+<div class="nav-links">
+  <a href="index.html">Overview</a>
+
+  <a href="./employee_page.html">Employees</a>
+
+  <a href="department.html" class="active">Departments</a>
+
+<a href="analytics.html">Analytics</a>
+
+<a href="report.html">Reports</a>
+</div>
+  <div class="nav-right">
+    <div class="search-box">
+      <span style="color:var(--muted);font-size:14px">🔍</span>
+      <input placeholder="Search departments…"/>
+    </div>
+    <div class="notif-btn">🔔<span class="notif-dot"></span></div>
+    <div class="user-chip">
+      <div class="user-avatar">OB</div>
+      <div class="user-info"><p>Olivia Brooks</p><p>HR Manager</p></div>
+      <span style="color:var(--muted);font-size:12px;margin-left:4px">▾</span>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header anim-fadeUp" style="animation-delay:.05s">
+    <div>
+      <h1>Departments</h1>
+      <p>Manage and track all departments across your organization</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary">📊 Export Report</button>
+      <button class="btn-primary">＋ New Department</button>
+    </div>
+  </div>
+
+  <!-- STAT STRIP -->
+  <div class="stat-strip">
+    <div class="stat-card c1 anim-fadeUp" style="animation-delay:.1s">
+      <div class="stat-glow" style="background:#7c5cfc"></div>
+      <div class="stat-top"><span class="stat-label">Total Departments</span><div class="stat-icon" style="background:#7c5cfc22">🏢</div></div>
+      <div class="stat-value" data-count="8">0</div>
+      <div class="stat-change up">▲ 2 added this quarter</div>
+    </div>
+    <div class="stat-card c2 anim-fadeUp" style="animation-delay:.18s">
+      <div class="stat-glow" style="background:#3b82f6"></div>
+      <div class="stat-top"><span class="stat-label">Total Headcount</span><div class="stat-icon" style="background:#3b82f622">👥</div></div>
+      <div class="stat-value" data-count="1248">0</div>
+      <div class="stat-change up">▲ 12.5% from last month</div>
+    </div>
+    <div class="stat-card c3 anim-fadeUp" style="animation-delay:.26s">
+      <div class="stat-glow" style="background:#10b981"></div>
+      <div class="stat-top"><span class="stat-label">Avg Team Size</span><div class="stat-icon" style="background:#10b98122">📐</div></div>
+      <div class="stat-value" data-count="156">0</div>
+      <div class="stat-change up">▲ 8 from last month</div>
+    </div>
+    <div class="stat-card c4 anim-fadeUp" style="animation-delay:.34s">
+      <div class="stat-glow" style="background:#f59e0b"></div>
+      <div class="stat-top"><span class="stat-label">Open Positions</span><div class="stat-icon" style="background:#f59e0b22">🎯</div></div>
+      <div class="stat-value" data-count="34">0</div>
+      <div class="stat-change down">▼ 6 filled this week</div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LEFT: DEPT CARDS -->
+    <div>
+      <div class="dept-cards-grid" id="deptCardsGrid"></div>
+
+      <!-- DEPT TABLE -->
+      <div class="dept-table-wrap reveal" style="margin-top:20px">
+        <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:14px;font-weight:700">Department Overview</span>
+          <span class="pill">This Quarter ▾</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Department</th>
+              <th>Manager</th>
+              <th>Headcount</th>
+              <th>Budget Used</th>
+              <th>Attrition</th>
+              <th>Health</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="deptTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+
+      <!-- Headcount Trend -->
+      <div class="card anim-slideLeft" style="animation-delay:.2s">
+        <div class="card-header">
+          <span class="card-title">Headcount Trend</span>
+          <span class="pill">6 Months ▾</span>
+        </div>
+        <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+      </div>
+
+      <!-- Org Structure -->
+      <div class="card anim-slideLeft" style="animation-delay:.3s">
+        <div class="card-title">Org Structure</div>
+        <div class="org-root">
+          <div class="org-node"><div class="org-dot" style="background:#7c5cfc"></div>CEO – Michael Chen</div>
+          <div class="org-line"></div>
+          <div class="org-children">
+            <div class="org-child">
+              <div class="org-child-line"></div>
+              <div class="org-child-node" style="border-color:#7c5cfc22">Engineering</div>
+            </div>
+            <div class="org-child">
+              <div class="org-child-line"></div>
+              <div class="org-child-node" style="border-color:#3b82f622">HR</div>
+            </div>
+            <div class="org-child">
+              <div class="org-child-line"></div>
+              <div class="org-child-node" style="border-color:#10b98122">Sales</div>
+            </div>
+            <div class="org-child">
+              <div class="org-child-line"></div>
+              <div class="org-child-node" style="border-color:#f59e0b22">Finance</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Budget Utilization -->
+      <div class="card anim-slideLeft" style="animation-delay:.4s">
+        <div class="card-header">
+          <span class="card-title">Budget Utilization</span>
+          <span class="pill">FY 2025 ▾</span>
+        </div>
+        <div id="budgetBars"></div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="card anim-slideLeft" style="animation-delay:.5s">
+        <div class="card-title">Recent Activity</div>
+        <div id="activityList"></div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ─── DATA ───
+const depts = [
+  {id:1,name:'Engineering',   icon:'⚙️', c1:'#7c5cfc',c2:'#3b82f6',bg:'#7c5cfc18',head:'Sarah Mitchell',   count:468,active:452,open:12,perf:94,badge:'Growing',badgeClass:'growing',
+   grads:['linear-gradient(135deg,#7c5cfc,#5b3fd4)','linear-gradient(135deg,#3b82f6,#06b6d4)','linear-gradient(135deg,#ec4899,#f59e0b)','linear-gradient(135deg,#10b981,#3b82f6)'],
+   inits:['SM','AK','JD','LR'],budget:82,attrition:3.2,health:5},
+  {id:2,name:'Human Resources',icon:'🤝',c1:'#3b82f6',c2:'#06b6d4',bg:'#3b82f618',head:'Linda Carter',     count:234,active:228,open:4,perf:88,badge:'Active',badgeClass:'active',
+   grads:['linear-gradient(135deg,#3b82f6,#06b6d4)','linear-gradient(135deg,#7c5cfc,#ec4899)','linear-gradient(135deg,#f59e0b,#ef4444)'],
+   inits:['LC','MR','KP'],budget:61,attrition:2.8,health:4},
+  {id:3,name:'Sales & Marketing',icon:'📈',c1:'#10b981',c2:'#06b6d4',bg:'#10b98118',head:'David Torres',   count:312,active:298,open:8,perf:91,badge:'Growing',badgeClass:'growing',
+   grads:['linear-gradient(135deg,#10b981,#06b6d4)','linear-gradient(135deg,#f59e0b,#f97316)','linear-gradient(135deg,#7c5cfc,#3b82f6)','linear-gradient(135deg,#ec4899,#7c5cfc)'],
+   inits:['DT','AS','BM','CR'],budget:75,attrition:5.1,health:4},
+  {id:4,name:'Finance',        icon:'💰',c1:'#f59e0b',c2:'#f97316',bg:'#f59e0b18',head:'Rachel Kim',       count:156,active:151,open:3,perf:86,badge:'Active',badgeClass:'active',
+   grads:['linear-gradient(135deg,#f59e0b,#f97316)','linear-gradient(135deg,#ef4444,#ec4899)','linear-gradient(135deg,#3b82f6,#7c5cfc)'],
+   inits:['RK','NP','TW'],budget:54,attrition:2.1,health:5},
+  {id:5,name:'Design',         icon:'🎨',c1:'#ec4899',c2:'#7c5cfc',bg:'#ec489918',head:'Marco Silva',      count:98,active:94,open:5,perf:96,badge:'Growing',badgeClass:'growing',
+   grads:['linear-gradient(135deg,#ec4899,#7c5cfc)','linear-gradient(135deg,#7c5cfc,#3b82f6)','linear-gradient(135deg,#f59e0b,#ef4444)'],
+   inits:['MS','JL','PK'],budget:48,attrition:1.9,health:5},
+  {id:6,name:'Operations',     icon:'🔧',c1:'#06b6d4',c2:'#3b82f6',bg:'#06b6d418',head:'Anna Kowalski',    count:124,active:118,open:2,perf:82,badge:'Active',badgeClass:'active',
+   grads:['linear-gradient(135deg,#06b6d4,#3b82f6)','linear-gradient(135deg,#10b981,#06b6d4)','linear-gradient(135deg,#7c5cfc,#ec4899)'],
+   inits:['AK','VC','RS'],budget:67,attrition:3.7,health:4},
+  {id:7,name:'Analytics',      icon:'📊',c1:'#f97316',c2:'#f59e0b',bg:'#f9731618',head:'James Okonkwo',    count:78,active:76,open:0,perf:90,badge:'Active',badgeClass:'active',
+   grads:['linear-gradient(135deg,#f97316,#f59e0b)','linear-gradient(135deg,#ef4444,#f97316)'],
+   inits:['JO','MH'],budget:41,attrition:2.4,health:5},
+  {id:8,name:'Legal & Compliance',icon:'⚖️',c1:'#8b5cf6',c2:'#7c5cfc',bg:'#8b5cf618',head:'Priya Sharma',  count:56,active:55,open:0,perf:84,badge:'Active',badgeClass:'active',
+   grads:['linear-gradient(135deg,#8b5cf6,#7c5cfc)','linear-gradient(135deg,#3b82f6,#06b6d4)'],
+   inits:['PS','BN'],budget:35,attrition:1.5,health:4},
+];
+
+// ─── BUILD DEPT CARDS ───
+const grid = document.getElementById('deptCardsGrid');
+depts.forEach((d, i) => {
+  const card = document.createElement('div');
+  card.className = 'dept-card reveal';
+  card.style.cssText = `--c1:${d.c1};--c2:${d.c2};animation-delay:${.1+i*.08}s`;
+  const avatars = d.inits.map((init,j) =>
+    `<div class="dc-avatar" style="background:${d.grads[j]||d.grads[0]}">${init}</div>`).join('');
+  const healthSegs = Array.from({length:5},(_,j)=>
+    `<div class="health-seg ${j<d.health?'filled':''}" style="background:${j<d.health?d.c1:'var(--surface3)'}"></div>`).join('');
+  card.innerHTML = `
+    <div class="dc-header">
+      <div class="dc-icon-wrap" style="background:${d.bg}">
+        <span>${d.icon}</span>
+        <div class="dc-icon-ping" style="--c1:${d.c1}"></div>
+      </div>
+      <span class="dc-badge ${d.badgeClass}">${d.badge}</span>
+    </div>
+    <div class="dc-name">${d.name}</div>
+    <div class="dc-head">Head: ${d.head}</div>
+    <div class="dc-stats">
+      <div class="dc-stat"><div class="n" style="color:${d.c1}">${d.count}</div><div class="l">EMPLOYEES</div></div>
+      <div class="dc-stat"><div class="n" style="color:${d.c2}">${d.active}</div><div class="l">ACTIVE</div></div>
+      <div class="dc-stat"><div class="n" style="color:${d.open>0?'var(--amber)':'var(--green)'}">${d.open}</div><div class="l">OPEN ROLES</div></div>
+    </div>
+    <div class="dc-progress-label"><span class="lbl">Performance Score</span><span style="font-weight:700;color:${d.c1}">${d.perf}%</span></div>
+    <div class="dc-bar-track"><div class="dc-bar-fill" data-pct="${d.perf}" style="background:linear-gradient(90deg,${d.c1},${d.c2})"></div></div>
+    <div class="dc-avatars">${avatars}<span class="dc-more">+${Math.max(0,d.count-d.inits.length)} more</span></div>`;
+  grid.appendChild(card);
+});
+
+// ─── DEPT TABLE ───
+const tableBody = document.getElementById('deptTableBody');
+depts.forEach(d => {
+  const healthSegs = Array.from({length:5},(_,j)=>
+    `<div class="health-seg ${j<d.health?'filled':''}" style="width:8px;height:18px;border-radius:3px;background:${j<d.health?d.c1:'#1e2340'}"></div>`).join('');
+  tableBody.innerHTML += `
+  <tr>
+    <td><div class="td-dept">
+      <div class="td-icon" style="background:${d.bg}">${d.icon}</div>
+      <div><div class="td-name">${d.name}</div><div class="td-head">${d.head}</div></div>
+    </div></td>
+    <td style="font-size:12px;color:var(--muted)">${d.head}</td>
+    <td><span style="font-weight:700">${d.count}</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:7px">
+        <div style="width:60px;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${d.budget}%;background:linear-gradient(90deg,${d.c1},${d.c2});border-radius:3px"></div>
+        </div>
+        <span style="font-size:11px;font-weight:600">${d.budget}%</span>
+      </div>
+    </td>
+    <td><span style="font-size:12px;font-weight:600;color:${d.attrition>4?'var(--red)':d.attrition>3?'var(--amber)':'var(--green)'}">${d.attrition}%</span></td>
+    <td><div style="display:flex;gap:2px">${healthSegs}</div></td>
+    <td><span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:${d.badgeClass==='growing'?'#7c5cfc20':'#10b98120'};color:${d.badgeClass==='growing'?'#7c5cfc':'#10b981'}">${d.badge}</span></td>
+  </tr>`;
+});
+
+// ─── BUDGET BARS ───
+const budgetData = [
+  {name:'Engineering',pct:82,color:'#7c5cfc'},
+  {name:'Sales & Marketing',pct:75,color:'#10b981'},
+  {name:'Human Resources',pct:61,color:'#3b82f6'},
+  {name:'Operations',pct:67,color:'#06b6d4'},
+  {name:'Design',pct:48,color:'#ec4899'},
+];
+const budgetWrap = document.getElementById('budgetBars');
+budgetData.forEach(b => {
+  budgetWrap.innerHTML += `
+  <div class="budget-row">
+    <div class="budget-meta"><span class="name">${b.name}</span><span class="val">${b.pct}% used</span></div>
+    <div class="budget-track"><div class="budget-fill" data-pct="${b.pct}" style="background:linear-gradient(90deg,${b.color},${b.color}99)"></div></div>
+  </div>`;
+});
+
+// ─── HEADCOUNT TREND CHART ───
+(function(){
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  const labels = ['Jan','Feb','Mar','Apr','May','Jun'];
+  const datasets = [
+    {label:'Engineering',data:[420,435,445,455,460,468],borderColor:'#7c5cfc',tension:.4,pointRadius:3,pointBackgroundColor:'#7c5cfc',borderWidth:2},
+    {label:'Sales',      data:[280,285,295,300,308,312],borderColor:'#10b981',tension:.4,pointRadius:3,pointBackgroundColor:'#10b981',borderWidth:2},
+    {label:'HR',         data:[210,215,220,225,230,234],borderColor:'#3b82f6',tension:.4,pointRadius:3,pointBackgroundColor:'#3b82f6',borderWidth:2},
+  ];
+  new Chart(ctx,{
+    type:'line',data:{labels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#8492a6',boxWidth:8,boxHeight:8,borderRadius:4,font:{size:10}}},
+        tooltip:{backgroundColor:'#131629',borderColor:'#ffffff11',borderWidth:1,titleFont:{size:11},bodyFont:{size:11}}},
+      scales:{x:{grid:{color:'#ffffff06'},ticks:{color:'#8492a6',font:{size:10}}},
+              y:{grid:{color:'#ffffff06'},ticks:{color:'#8492a6',font:{size:10}}}}
+    }
+  });
+})();
+
+// ─── ACTIVITY ───
+const acts = [
+  {icon:'🟣',bg:'#7c5cfc18',text:'<strong>5 new engineers</strong> joined Engineering',time:'2h ago'},
+  {icon:'🟢',bg:'#10b98118',text:'<strong>Sales target</strong> hit 107% for May',time:'5h ago'},
+  {icon:'🔵',bg:'#3b82f618',text:'<strong>HR</strong> approved 12 leave requests',time:'1d ago'},
+  {icon:'🟡',bg:'#f59e0b18',text:'Budget review completed for <strong>Finance</strong>',time:'2d ago'},
+  {icon:'🩷',bg:'#ec489918',text:'<strong>Design team</strong> expanded with 2 hires',time:'3d ago'},
+];
+const actWrap = document.getElementById('activityList');
+acts.forEach(a => {
+  actWrap.innerHTML += `
+  <div class="act-row">
+    <div class="act-icon" style="background:${a.bg}">${a.icon}</div>
+    <div class="act-text">${a.text}</div>
+    <div class="act-time">${a.time}</div>
+  </div>`;
+});
+
+// ─── INTERSECTION OBSERVER (scroll reveal + bar fill) ───
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if(entry.isIntersecting){
+      const el = entry.target;
+      el.classList.add('visible');
+      // add animation
+      el.style.animation = `fadeUp .6s cubic-bezier(.22,1,.36,1) ${i*0.05}s both`;
+      // trigger progress bars
+      el.querySelectorAll('.dc-bar-fill[data-pct]').forEach(bar => {
+        setTimeout(() => { bar.style.width = bar.dataset.pct + '%'; }, 300);
+      });
+      el.querySelectorAll('.budget-fill[data-pct]').forEach(bar => {
+        setTimeout(() => { bar.style.width = bar.dataset.pct + '%'; }, 400);
+      });
+      observer.unobserve(el);
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ─── COUNT-UP ANIMATION ───
+function animateCount(el, target) {
+  const duration = 1200;
+  const start = performance.now();
+  const isFloat = target % 1 !== 0;
+  function step(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const val = Math.round(ease * target);
+    el.textContent = val.toLocaleString();
+    if(progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+setTimeout(() => {
+  document.querySelectorAll('[data-count]').forEach(el => {
+    animateCount(el, parseInt(el.dataset.count));
+  });
+}, 400);
+
+// ─── STAGGER DEPT CARDS ───
+setTimeout(() => {
+  document.querySelectorAll('.dept-card').forEach((card, i) => {
+    card.style.animation = `fadeUp .6s cubic-bezier(.22,1,.36,1) ${i*0.08}s both`;
+    card.classList.add('visible');
+    setTimeout(() => {
+      card.querySelectorAll('.dc-bar-fill[data-pct]').forEach(bar => {
+        bar.style.width = bar.dataset.pct + '%';
+      });
+    }, 600 + i * 80);
+  });
+}, 200);
+function goToDashboard(){
+  window.location.href = "index.html";
+}
+
+function goToEmployees(){
+  window.location.href = "employee_page.html";
+}
+
+function goToDepartments(){
+  window.location.href = "department.html";
+}
+</script>
+<script>
+const canvas = document.getElementById("particleCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let particles = [];
+
+for(let i=0; i<70; i++){
+  particles.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 2 + 1,
+    dx: (Math.random() - 0.5) * 0.5,
+    dy: (Math.random() - 0.5) * 0.5
+  });
+}
+
+function animateParticles(){
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  particles.forEach(p => {
+
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+
+    ctx.fillStyle = "rgba(124,92,252,0.7)";
+    ctx.fill();
+
+    particles.forEach(p2 => {
+
+      let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+
+      if(dist < 120){
+
+        ctx.beginPath();
+
+        ctx.moveTo(p.x, p.y);
+
+        ctx.lineTo(p2.x, p2.y);
+
+        ctx.strokeStyle = "rgba(124,92,252,0.08)";
+
+        ctx.stroke();
+
+      }
+
+    });
+
+    p.x += p.dx;
+    p.y += p.dy;
+
+    if(p.x < 0 || p.x > canvas.width) p.dx *= -1;
+    if(p.y < 0 || p.y > canvas.height) p.dy *= -1;
+
+  });
+
+  requestAnimationFrame(animateParticles);
+}
+
+animateParticles();
+
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EMS – Employee Management System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script>
+if(localStorage.getItem("auth") !== "true") {
+  window.location.href = "login.html";
+}
+if(localStorage.getItem("theme") === "true"){
+  document.body.classList.add("light-mode");
+}
+window.onload = function () {
+
+  document.getElementById("themeToggle").onclick = function () {
+
+    document.body.classList.toggle("light-mode");
+
+  };
+
+};
+</script>
+<style>
+  #particleCanvas{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  opacity:.45;
+}
+
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+
+  background-image:
+    linear-gradient(rgba(123,110,246,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(123,110,246,.04) 1px,transparent 1px);
+
+  background-size:48px 48px;
+}
+  .notif-box{
+  display: none;
+  position: fixed;
+  top: 70px;
+  right: 120px;
+  background: #181c30;
+  color: white;
+  padding: 15px;
+  border-radius: 12px;
+  width: 220px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.4);
+  z-index: 1000;
+}
+
+.notif-box p{
+  margin: 10px 0;
+  font-size: 14px;
+}
+  body,
+.card,
+nav,
+.search-box,
+#themeToggle{
+  transition: all 0.4s ease;
+}
+  .light-mode{
+  background: white;
+  color: black;
+}
+
+.light-mode .card{
+  transition: 0.3s ease;
+cursor: pointer;
+  background: #f3f4f6;
+  color: black;
+}
+.card:hover{
+  transform: translateY(-6px);
+  box-shadow: 0 0 20px rgba(124,92,252,0.35);
+}
+
+.light-mode nav{
+  background: #ffffff;
+}
+
+.light-mode .search-box{
+  background: #e5e7eb;
+}
+  #themeToggle{
+  background: #181c30;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 18px;
+  margin-left: 10px;
+  transition: 0.3s;
+}
+
+#themeToggle:hover{
+  transform: scale(1.08);
+}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d0f1a;
+    --surface:   #131629;
+    --surface2:  #181c30;
+    --border:    rgba(255,255,255,0.06);
+    --text:      #e2e8f0;
+    --muted:     #8492a6;
+    --purple:    #7c5cfc;
+    --blue:      #3b82f6;
+    --green:     #10b981;
+    --amber:     #f59e0b;
+    --red:       #ef4444;
+    --cyan:      #06b6d4;
+    --pink:      #ec4899;
+    --radius:    14px;
+    --radius-sm: 8px;
+  }
+
+  html, body { height: 100%; background: var(--bg); font-family: 'Space Grotesk', sans-serif; color: var(--text); overflow-x: hidden; }
+
+  /* ── LAYOUT ── */
+  .app { display: grid; grid-template-rows: 64px 1fr; height: 100vh; }
+
+  /* ── TOP NAV ── */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 24px; gap: 24px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 160px; }
+  .brand-icon { width: 36px; height: 36px; background: linear-gradient(135deg,#7c5cfc,#3b82f6); border-radius: 10px; display: grid; place-items: center; font-size: 18px; }
+  .brand-text h2 { font-size: 15px; font-weight: 800; letter-spacing: .5px; }
+  .brand-text p  { font-size: 10px; color: var(--muted); letter-spacing: .4px; }
+
+  .nav-links { display: flex; gap: 4px; flex: 1; justify-content: center; }
+  .nav-links a { padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; cursor: pointer; transition: all .2s; }
+  .nav-links a.active { background: linear-gradient(135deg,#7c5cfc22,#3b82f622); color: var(--text); }
+  .nav-links a:hover:not(.active) { background: var(--surface2); color: var(--text); }
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+  flex-wrap: nowrap;
+}
+  .search-box { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 7px 12px; }
+  .search-box input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; width: 160px; }
+  .search-box input::placeholder { color: var(--muted); }
+  .notif-btn { width: 36px; height: 36px; background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; display: grid; place-items: center; cursor: pointer; position: relative; }
+  .notif-dot { width: 8px; height: 8px; background: var(--red); border-radius: 50%; position: absolute; top: 6px; right: 6px; border: 2px solid var(--surface); }
+  .user-chip { display: flex; align-items: center; gap: 9px; background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 5px 12px 5px 5px; cursor: pointer; }
+  .user-avatar { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg,#7c5cfc,#ec4899); display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+  .user-info p:first-child { font-size: 12px; font-weight: 600; }
+  .user-info p:last-child  { font-size: 10px; color: var(--muted); }
+
+  /* ── MAIN ── */
+  main { overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── HEADER ── */
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; }
+  .page-header h1 { font-size: 22px; font-weight: 800; }
+  .page-header p  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .date-pill { display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 7px 14px; font-size: 13px; color: var(--muted); cursor: pointer; }
+
+  /* ── STAT CARDS ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; position: relative; overflow: hidden; }
+  .stat-card::before { content:''; position: absolute; inset: 0; opacity: .08; border-radius: var(--radius); }
+  .stat-card.purple::before { background: linear-gradient(135deg,var(--purple),transparent); }
+  .stat-card.blue::before   { background: linear-gradient(135deg,var(--blue),transparent); }
+  .stat-card.green::before  { background: linear-gradient(135deg,var(--green),transparent); }
+  .stat-card.red::before    { background: linear-gradient(135deg,var(--red),transparent); }
+
+  .stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .stat-icon { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; }
+  .stat-icon.purple { background: #7c5cfc22; }
+  .stat-icon.blue   { background: #3b82f622; }
+  .stat-icon.green  { background: #10b98122; }
+  .stat-icon.red    { background: #ef444422; }
+  .stat-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .stat-value { font-size: 30px; font-weight: 800; letter-spacing: -1px; margin-bottom: 4px; }
+  .stat-change { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+  .stat-change.up   { color: var(--green); }
+  .stat-change.down { color: var(--red); }
+  .sparkline { position: absolute; bottom: 0; right: 0; width: 110px; height: 50px; }
+
+  /* ── MIDDLE ROW ── */
+  .mid-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 16px; }
+
+  /* ── CARD BASE ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .card-title { font-size: 14px; font-weight: 700; }
+  .pill { font-size: 11px; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+
+  /* ── CHARTS ── */
+  .chart-wrap { position: relative; height: 180px; }
+
+  /* ── ATTENDANCE CALENDAR ── */
+  
+  
+  
+  .cal-nav { display: flex; align-items: center; gap: 10px; }
+  .cal-nav button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 5px; }
+  .cal-nav button:hover { background: var(--surface2); }
+  .cal-nav span { font-size: 13px; font-weight: 600; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; text-align: center; }
+  .cal-dow { font-size: 10px; color: var(--muted); font-weight: 600; padding: 4px 0; }
+  .cal-day { font-size: 11px; padding: 5px 2px; border-radius: 6px; cursor: pointer; color: var(--muted); }
+  .cal-day:hover { background: var(--surface2); color: var(--text); }
+  .cal-day.today { background: var(--purple); color: #fff; font-weight: 700; }
+  .cal-day.weekend { color: #475569; }
+  .cal-day.prev-month { opacity: .35; }
+  .att-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+  .att-legend span { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .att-legend span::before { content:''; width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .att-legend span.pres::before { background: var(--green); }
+  .att-legend span.leave::before { background: var(--amber); }
+  .att-legend span.absent::before { background: var(--red); }
+  .att-legend span.holiday::before { background: var(--blue); }
+
+  /* ── HIRING PIPELINE ── */
+  .pipeline-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .pipe-icon { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center; font-size: 14px; flex-shrink: 0; }
+  .pipe-label { font-size: 12px; font-weight: 600; flex: 1; }
+  .pipe-bar-wrap { width: 130px; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+  .pipe-bar { height: 100%; border-radius: 4px; }
+  .pipe-count { font-size: 12px; font-weight: 700; width: 32px; text-align: right; }
+  .pipe-glow { position: relative; height: 80px; margin-top: 6px; }
+  .glow-bar { display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; border-radius: 6px; margin-bottom: 4px; font-size: 11px; font-weight: 700; color: #fff; transition: width .6s ease; }
+
+  /* ── BOTTOM ROW ── */
+  .bottom-grid { display: grid; grid-template-columns: 1fr 1fr 1.4fr 1fr; gap: 16px; }
+
+  /* ── TOP EMPLOYEES ── */
+  .emp-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .rank { font-size: 12px; font-weight: 700; color: var(--muted); width: 16px; }
+  .rank.gold   { color: #f59e0b; }
+  .rank.silver { color: #94a3b8; }
+  .rank.bronze { color: #b45309; }
+  .emp-avatar { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg,#7c5cfc,#3b82f6); display: grid; place-items: center; font-size: 13px; font-weight: 700; flex-shrink: 0; color: #fff; overflow: hidden; }
+  .emp-name { font-size: 12px; font-weight: 600; }
+  .emp-role { font-size: 11px; color: var(--muted); }
+  .emp-score { font-size: 13px; font-weight: 800; color: var(--purple); margin-left: auto; }
+
+  /* ── DEPT DONUT ── */
+  .donut-wrap { display: flex; align-items: center; gap: 16px; }
+  .donut-canvas { position: relative; width: 120px; height: 120px; flex-shrink: 0; }
+  .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; }
+  .donut-center .num { font-size: 20px; font-weight: 800; }
+  .donut-center .lbl { font-size: 9px; color: var(--muted); font-weight: 600; }
+  .dept-list { flex: 1; }
+  .dept-item { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; font-size: 11px; }
+  .dept-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dept-name { flex: 1; color: var(--muted); }
+  .dept-pct  { font-weight: 600; }
+
+  /* ── LOCATIONS MAP ── */
+  .map-box { background: #0a0c18; border-radius: 10px; height: 130px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .world-svg { width: 100%; height: 100%; opacity: .25; }
+  .map-dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; cursor: pointer; }
+  .map-dot::after { content:''; position: absolute; inset: -4px; border-radius: 50%; opacity: .3; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1);opacity:.3} 50%{transform:scale(1.8);opacity:0} }
+  .loc-stats { display: flex; justify-content: space-around; margin-top: 12px; }
+  .loc-stat { text-align: center; }
+  .loc-stat .n { font-size: 16px; font-weight: 800; }
+  .loc-stat .l { font-size: 10px; color: var(--muted); font-weight: 600; }
+  .loc-stat .n.amber { color: var(--amber); }
+
+  /* ── UPCOMING INTERVIEWS ── */
+  .interview-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .int-avatar { width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg,#7c5cfc,#06b6d4); display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .int-name { font-size: 12px; font-weight: 700; }
+  .int-role { font-size: 11px; color: var(--muted); }
+  .int-date { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+
+  /* ── LEAVE + ACTIVITY ── */
+  .lower-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .leave-wrap { display: flex; align-items: center; gap: 20px; }
+  .leave-donut { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+  .leave-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; }
+  .leave-center .n { font-size: 18px; font-weight: 800; }
+  .leave-center .l { font-size: 9px; color: var(--muted); }
+  .leave-items { display: flex; gap: 10px; flex-wrap: wrap; }
+  .leave-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 8px 12px; text-align: center; }
+  .leave-item .n { font-size: 18px; font-weight: 800; }
+  .leave-item .l { font-size: 10px; color: var(--muted); }
+  .leave-item .p { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+  /* ── ACTIVITY ── */
+  .activity-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
+  .act-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .act-text { font-size: 12px; flex: 1; }
+  .act-time { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: #2a2f4a; border-radius: 3px; }
+
+  /* ── BADGE ILLUSTRATION ── */
+  .badge-illus { display: flex; align-items: center; justify-content: center; height: 100%; }
+  .badge-illus svg { filter: drop-shadow(0 0 20px #7c5cfc66); }
+  .app-body {
+  overflow: auto !important;
+}
+</style>
+</head>
+<body>
+<canvas id="particleCanvas"></canvas>
+<div class="app">
+
+  <!-- NAV -->
+  <nav>
+    <div class="brand">
+      <div class="brand-icon">👥</div>
+      <div class="brand-text">
+        <h2>EMS</h2>
+        <p>Employee Management System</p>
+      </div>
+    </div>
+  <div class="nav-links">
+  <a href="index.html" class="active">Overview</a>
+
+<a href="./employee_page.html">Employees</a>
+
+  <a href="department.html">Departments</a>
+<a href="analytics.html">Analytics</a>
+
+<a href="report.html">Reports</a>
+</div>
+  <a class="active" href="index.html">Overview</a>
+<a href="employee_page.html">Employees</a>
+  <a>Departments</a>
+  <a>Analytics</a>
+  <a>Reports</a>
+</div>
+    <div class="nav-right">
+      <div class="search-box">
+        <span style="color:var(--muted);font-size:14px">🔍</span>
+   <input 
+  type="text"
+  id="searchInput"
+  placeholder="Search employees..."
+>
+      </div>
+<div class="notif-btn" onclick="toggleNotif()">
+  🔔
+  <span class="notif-dot"></span>
+</div>
+      <button id="themeToggle">🌙</button>
+      <div class="user-chip">
+        <button onclick="logout()" style="margin-left:10px;padding:6px 12px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;background:#181c30;color:#e2e8f0;cursor:pointer;transition:0.2s;">
+  Logout
+</button>
+       
+        <div class="user-avatar">OB</div>
+        <div class="user-info">
+          <p>Olivia Brooks</p>
+          <p>HR Manager</p>
+        </div>
+        <span style="color:var(--muted);font-size:12px;margin-left:4px">▾</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <h1>Welcome back, Olivia! 👋</h1>
+        <p>Here's what's happening in your organization today.</p>
+      </div>
+      <div class="date-pill">📅 <span id="currentDate"></span> ▾</div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="stat-grid">
+   <div class="stat-card purple"
+onclick="window.location.href='employee_page.html'"
+style="cursor:pointer;">
+        <div class="stat-top">
+          <span class="stat-label">Total Employees</span>
+          <div class="stat-icon purple">👥</div>
+        </div>
+        <div class="stat-value" id="empCount">0</div>
+        <div class="stat-change up">▲ 12.5% from last month</div>
+        <canvas class="sparkline" id="spark1"></canvas>
+      </div>
+      <div class="stat-card blue"
+onclick="window.location.href='employee_page.html'"
+style="cursor:pointer;">
+        <div class="stat-top">
+          <span class="stat-label">Active Employees</span>
+          <div class="stat-icon blue">✅</div>
+        </div>
+        <div class="stat-value" id="activeCount">0</div>
+        <div class="stat-change up">▲ 8.3% from last month</div>
+        <canvas class="sparkline" id="spark2"></canvas>
+      </div>
+      <div class="stat-card green"
+onclick="window.location.href='employee_page.html'"
+style="cursor:pointer;">
+        <div class="stat-top">
+          <span class="stat-label">New Hires (This Month)</span>
+          <div class="stat-icon green">🆕</div>
+        </div>
+        <div class="stat-value">42</div>
+        <div class="stat-change up">▲ 28.6% from last month</div>
+        <canvas class="sparkline" id="spark3"></canvas>
+      </div>
+      <div class="stat-card red"
+onclick="window.location.href='analytics.html'"
+style="cursor:pointer;">
+        <div class="stat-top">
+          <span class="stat-label">Attrition Rate</span>
+          <div class="stat-icon red">📉</div>
+        </div>
+        <div class="stat-value">4.6%</div>
+        <div class="stat-change down">▼ 1.2% from last month</div>
+        <canvas class="sparkline" id="spark4"></canvas>
+      </div>
+    </div>
+
+    <!-- MID ROW -->
+    <div class="mid-grid">
+
+      <!-- Employee Growth -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Employee Growth</span>
+          <div style="display:flex;align-items:center;gap:14px">
+            <span style="font-size:11px;display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:var(--purple);display:inline-block"></span>Total</span>
+            <span style="font-size:11px;display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:var(--blue);display:inline-block"></span>New Hires</span>
+            <div class="pill">This Year ▾</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="growthChart"></canvas></div>
+      </div>
+
+      <!-- Attendance Calendar -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Attendance Overview</span>
+          <div class="cal-nav">
+            <button id="prevMonth">‹</button>
+           <span id="currentMonthYear"></span>
+            <button id="nextMonth">›</button>
+            <span style="font-size:14px;cursor:pointer;color:var(--muted)">📅</span>
+          </div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="att-legend">
+          <span class="pres">Present 880</span>
+          <span class="leave">Leave 68</span>
+          <span class="absent">Absent 15</span>
+          <span class="holiday">Holiday 7</span>
+        </div>
+      </div>
+
+      <!-- Hiring Pipeline -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Hiring Pipeline</span>
+          <div class="pill">This Month ▾</div>
+        </div>
+        <div id="pipelineRows"></div>
+      </div>
+
+    </div>
+
+    <!-- BOTTOM ROW -->
+    <div class="bottom-grid">
+
+      <!-- Top Employees -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Top Performing Employees</span>
+          <span class="pill" style="color:var(--purple)">View All</span>
+        </div>
+        <div id="empList"></div>
+      </div>
+
+      <!-- Dept Donut -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Employees by Department</span>
+          <div class="pill">This Month ▾</div>
+        </div>
+        <div class="donut-wrap">
+          <div class="donut-canvas">
+            <canvas id="deptChart"></canvas>
+            <div class="donut-center">
+              <div class="num">1,248</div>
+              <div class="lbl">Total</div>
+            </div>
+          </div>
+          <div class="dept-list" id="deptList"></div>
+        </div>
+      </div>
+
+      <!-- Locations Map -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Employee Locations</span>
+          <span class="pill" style="color:var(--purple)">View All</span>
+        </div>
+        <div class="map-box" id="mapBox">
+          <!-- Simple SVG world outline -->
+          <svg class="world-svg" viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="400" cy="200" rx="380" ry="185" stroke="#334155" stroke-width="1"/>
+            <!-- continents placeholder shapes -->
+            <path d="M120 140 Q160 100 220 130 Q240 160 200 190 Q150 200 120 170 Z" fill="#1e293b"/>
+            <path d="M180 210 Q220 195 260 220 Q270 250 230 270 Q185 265 175 240 Z" fill="#1e293b"/>
+            <path d="M270 120 Q340 90 420 110 Q480 130 500 170 Q510 210 470 230 Q400 250 340 230 Q280 210 265 175 Z" fill="#1e293b"/>
+            <path d="M310 250 Q350 240 380 260 Q385 285 355 295 Q320 290 310 270 Z" fill="#1e293b"/>
+            <path d="M520 130 Q580 110 640 130 Q680 150 670 200 Q640 240 580 230 Q530 210 520 170 Z" fill="#1e293b"/>
+            <path d="M560 250 Q610 240 640 265 Q640 295 600 300 Q565 295 555 270 Z" fill="#1e293b"/>
+            <path d="M610 295 Q660 285 690 305 Q700 330 670 345 Q630 345 615 320 Z" fill="#1e293b"/>
+          </svg>
+          <!-- Dots -->
+          <div class="map-dot" style="left:41%;top:38%;background:#10b981;box-shadow:0 0 10px #10b981" title="India 468">
+            <div style="position:absolute;inset:-4px;border-radius:50%;background:#10b98133;animation:pulse 2s infinite"></div>
+          </div>
+          <div class="map-dot" style="left:22%;top:42%;background:#3b82f6;box-shadow:0 0 10px #3b82f6" title="USA 234">
+            <div style="position:absolute;inset:-4px;border-radius:50%;background:#3b82f633;animation:pulse 2s infinite .4s"></div>
+          </div>
+          <div class="map-dot" style="left:18%;top:35%;background:#f59e0b;box-shadow:0 0 10px #f59e0b" title="Canada 98">
+            <div style="position:absolute;inset:-4px;border-radius:50%;background:#f59e0b33;animation:pulse 2s infinite .8s"></div>
+          </div>
+          <div class="map-dot" style="left:47%;top:32%;background:#7c5cfc;box-shadow:0 0 10px #7c5cfc" title="UK 86">
+            <div style="position:absolute;inset:-4px;border-radius:50%;background:#7c5cfc33;animation:pulse 2s infinite 1.2s"></div>
+          </div>
+        </div>
+        <div class="loc-stats">
+          <div class="loc-stat"><div class="n" style="color:var(--green)">468</div><div class="l">India</div></div>
+          <div class="loc-stat"><div class="n" style="color:var(--blue)">234</div><div class="l">USA</div></div>
+          <div class="loc-stat"><div class="n amber" style="color:var(--amber)">98</div><div class="l">Canada</div></div>
+          <div class="loc-stat"><div class="n" style="color:var(--purple)">86</div><div class="l">UK</div></div>
+          <div class="loc-stat"><div class="n" style="color:var(--muted)">362</div><div class="l">Others</div></div>
+        </div>
+      </div>
+
+      <!-- Upcoming Interviews -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Upcoming Interviews</span>
+          <span class="pill" style="color:var(--purple)">View All</span>
+        </div>
+        <div id="interviews"></div>
+      </div>
+
+    </div>
+
+    <!-- LEAVE + ACTIVITY -->
+    <div class="lower-grid">
+
+      <!-- Leave Overview -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Leave Overview</span>
+          <div class="pill">This Month ▾</div>
+        </div>
+        <div class="leave-wrap">
+          <div class="leave-donut">
+            <canvas id="leaveChart"></canvas>
+            <div class="leave-center">
+              <div class="n">156</div>
+              <div class="l">Total Leaves</div>
+            </div>
+          </div>
+          <div class="leave-items">
+            <div class="leave-item"><div class="n" style="color:#7c5cfc">56</div><div class="l">Casual</div><div class="p">Leave 35.9%</div></div>
+            <div class="leave-item"><div class="n" style="color:#3b82f6">38</div><div class="l">Sick</div><div class="p">Leave 24.4%</div></div>
+            <div class="leave-item"><div class="n" style="color:#10b981">32</div><div class="l">Paid</div><div class="p">Leave 20.5%</div></div>
+            <div class="leave-item"><div class="n" style="color:#f59e0b">30</div><div class="l">Other</div><div class="p">Leave 19.2%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activities -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Recent Activities</span>
+        </div>
+        <div id="activityList"></div>
+        <!-- Badge illustration (bottom right) -->
+        <div style="display:flex;justify-content:flex-end;margin-top:10px">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 0 16px #7c5cfc66)">
+            <rect x="20" y="10" width="40" height="50" rx="8" fill="#1e293b" stroke="#7c5cfc" stroke-width="1.5"/>
+            <rect x="30" y="5" width="20" height="12" rx="4" fill="#131629" stroke="#7c5cfc" stroke-width="1.5"/>
+            <line x1="28" y1="30" x2="52" y2="30" stroke="#334155" stroke-width="2"/>
+            <line x1="28" y1="38" x2="52" y2="38" stroke="#334155" stroke-width="2"/>
+            <line x1="28" y1="46" x2="44" y2="46" stroke="#334155" stroke-width="2"/>
+            <circle cx="62" cy="58" r="14" fill="#7c5cfc"/>
+            <path d="M56 58 L60 62 L68 54" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<script>
+  let monthOffset = 0;
+// ── SPARKLINES ──
+function sparkline(id, data, color) {
+  const ctx = document.getElementById(id).getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.map((_,i)=>i),
+      datasets: [{ data, borderColor: color, borderWidth: 2, fill: true,
+        backgroundColor: (ctx2) => {
+          const g = ctx2.chart.ctx.createLinearGradient(0,0,0,50);
+          g.addColorStop(0, color+'55'); g.addColorStop(1, color+'00'); return g;
+        },
+        tension: .4, pointRadius: 0 }]
+    },
+    options: { plugins:{legend:{display:false}}, scales:{x:{display:false},y:{display:false}}, responsive:false, animation:false }
+  });
+}
+sparkline('spark1',[600,750,800,820,900,1000,1100,1200,1248],'#7c5cfc');
+sparkline('spark2',[700,780,820,850,900,920,960,980,982],'#3b82f6');
+sparkline('spark3',[20,25,30,18,35,28,40,38,42],'#10b981');
+sparkline('spark4',[6.5,6.2,5.8,5.5,5.2,4.9,4.8,4.7,4.6],'#ef4444');
+
+// ── GROWTH CHART ──
+(function(){
+  const ctx = document.getElementById('growthChart').getContext('2d');
+  const labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul'];
+  const total =  [780,840,920,1020,1120,1180,1248];
+  const hires =  [25,18,22,35,40,30,42];
+  const grad1 = ctx.createLinearGradient(0,0,0,180);
+  grad1.addColorStop(0,'#7c5cfc44'); grad1.addColorStop(1,'#7c5cfc00');
+  const grad2 = ctx.createLinearGradient(0,0,0,180);
+  grad2.addColorStop(0,'#3b82f633'); grad2.addColorStop(1,'#3b82f600');
+  new Chart(ctx, {
+    type:'line',
+    data:{ labels,
+      datasets:[
+        { label:'Total Employees', data:total, borderColor:'#7c5cfc', backgroundColor:grad1, tension:.4, pointRadius:4, pointBackgroundColor:'#7c5cfc', fill:true, borderWidth:2 },
+        { label:'New Hires',       data:hires, borderColor:'#3b82f6', backgroundColor:grad2, tension:.4, pointRadius:4, pointBackgroundColor:'#3b82f6', fill:true, borderWidth:2, yAxisID:'y2' }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#131629', borderColor:'#ffffff11', borderWidth:1, titleFont:{size:11}, bodyFont:{size:11} }},
+      scales:{
+        x:{ grid:{color:'#ffffff08'}, ticks:{color:'#8492a6',font:{size:11}} },
+        y:{ grid:{color:'#ffffff08'}, ticks:{color:'#8492a6',font:{size:11}}, position:'left' },
+        y2:{ grid:{display:false}, ticks:{color:'#8492a6',font:{size:11}}, position:'right' }
+      }
+    }
+  });
+})();
+
+// ── CALENDAR ──
+/* ── ATTENDANCE CALENDAR ── */
+let currentDate = new Date();
+const now = currentDate;
+function renderCalendar(){
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = "";
+  const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  dows.forEach(d => { const el=document.createElement('div'); el.className='cal-dow'; el.textContent=d; grid.appendChild(el); });
+  // May 2025 starts on Thursday (day 4)
+  window.monthOffset = 0;
+  const updatedDate = new Date();
+updatedDate.setMonth(updatedDate.getMonth() + monthOffset);
+const year = updatedDate.getFullYear();
+const month = updatedDate.getMonth();
+
+const start = new Date(year, month, 1).getDay();
+
+const days = new Date(year, month + 1, 0).getDate();
+let currentDate = new Date();
+window.monthNames = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
+
+document.getElementById("currentMonthYear").innerText =
+window.monthNames[updatedDate.getMonth()] + " " + updatedDate.getFullYear();
+  monthNames[now.getMonth()] + " " + now.getFullYear();
+  const today = new Date().getDate();
+  for(let i=0;i<start;i++){
+    const prev=31-start+1+i;
+    const el=document.createElement('div'); el.className='cal-day prev-month'; el.textContent=prev; grid.appendChild(el);
+  }
+  for(let d=1;d<=days;d++){
+    const el=document.createElement('div');
+    el.className='cal-day' + (d===today ?' today':'') + ([0,6].includes((start+d-1)%7)?' weekend':'');
+    el.textContent=d; grid.appendChild(el);
+  }
+  // fill remaining
+  let rem = (7 - (start+days)%7)%7;
+  for(let i=1;i<=rem;i++){
+    const el=document.createElement('div'); el.className='cal-day prev-month'; el.textContent=i; grid.appendChild(el);
+  }
+}
+
+renderCalendar();
+
+// ── HIRING PIPELINE ──
+(function(){
+  const stages=[
+    {icon:'🟣',label:'Applications',color:'#7c5cfc',count:null,pct:100},
+    {icon:'🔵',label:'Screening',   color:'#3b82f6',count:128,pct:75},
+    {icon:'🟠',label:'Interview',   color:'#f59e0b',count:18,pct:40},
+    {icon:'🟡',label:'Offer',       color:'#eab308',count:10,pct:25},
+    {icon:'🟢',label:'Hired',       color:'#10b981',count:12,pct:30},
+  ];
+  const wrap=document.getElementById('pipelineRows');
+  stages.forEach(s=>{
+    wrap.innerHTML+=`
+    <div class="pipeline-row">
+      <div class="pipe-icon" style="background:${s.color}22">${s.icon}</div>
+      <div class="pipe-label">${s.label}</div>
+      <div class="pipe-bar-wrap"><div class="pipe-bar" style="width:${s.pct}%;background:${s.color}"></div></div>
+      <div class="pipe-count" style="color:${s.color}">${s.count??''}</div>
+    </div>`;
+  });
+})();
+const todayDate = new Date();
+
+const formattedDate =
+  todayDate.toLocaleString('default', { month: 'long' }) +
+  " " +
+  todayDate.getDate() +
+  ", " +
+  todayDate.getFullYear();
+
+document.getElementById("currentDate").innerText = formattedDate;
+
+// ── TOP EMPLOYEES ──
+(function(){
+  const emps=[
+    {name:'Dianne Russell',role:'UI/UX Designer',score:'4.9',init:'DR'},
+    {name:'Cody Fisher',   role:'Software Engineer',score:'4.8',init:'CF'},
+    {name:'Jenny Wilson',  role:'HR Manager',score:'4.7',init:'JW'},
+    {name:'Robert Fox',    role:'Sales Executive',score:'4.6',init:'RF'},
+    {name:'Jacob Jones',   role:'Product Designer',score:'4.5',init:'JJ'},
+  ];
+  const ranks=['gold','silver','bronze','',''];
+  const wrap=document.getElementById('empList');
+  const grads=[
+    'linear-gradient(135deg,#7c5cfc,#3b82f6)','linear-gradient(135deg,#10b981,#06b6d4)',
+    'linear-gradient(135deg,#f59e0b,#ef4444)','linear-gradient(135deg,#ec4899,#7c5cfc)',
+    'linear-gradient(135deg,#3b82f6,#10b981)'
+  ];
+  emps.forEach((e,i)=>{
+    wrap.innerHTML+=`
+    <div class="emp-row">
+      <div class="rank ${ranks[i]}">${i+1}</div>
+      <div class="emp-avatar" style="background:${grads[i]}">${e.init}</div>
+      <div><div class="emp-name">${e.name}</div><div class="emp-role">${e.role}</div></div>
+      <div class="emp-score">${e.score}</div>
+    </div>`;
+  });
+})();
+
+// ── DEPT DONUT ──
+(function(){
+  const depts=[
+    {name:'Engineering',    n:468,pct:'37.5%',color:'#7c5cfc'},
+    {name:'Human Resources',n:234,pct:'18.8%',color:'#3b82f6'},
+    {name:'Sales & Marketing',n:312,pct:'25.0%',color:'#10b981'},
+    {name:'Finance',        n:156,pct:'12.5%',color:'#f59e0b'},
+    {name:'Other',          n:78, pct:'6.2%', color:'#64748b'},
+  ];
+  const ctx=document.getElementById('deptChart').getContext('2d');
+  new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      datasets:[{ data:depts.map(d=>d.n), backgroundColor:depts.map(d=>d.color),
+        borderWidth:0, hoverOffset:4 }]
+    },
+    options:{ cutout:'70%', plugins:{legend:{display:false},tooltip:{enabled:false}}, responsive:true, maintainAspectRatio:false }
+  });
+  const list=document.getElementById('deptList');
+  depts.forEach(d=>{
+    list.innerHTML+=`<div class="dept-item"><div class="dept-dot" style="background:${d.color}"></div><div class="dept-name">${d.name}</div><div class="dept-pct">${d.n} <span style="color:var(--muted)">(${d.pct})</span></div></div>`;
+  });
+})();
+
+// ── INTERVIEWS ──
+(function(){
+  const data=[
+    {name:'Marvin McKinney',role:'Frontend Developer', date:'May 24, 2025',time:'10:30 AM',init:'MM',grad:'linear-gradient(135deg,#7c5cfc,#3b82f6)'},
+    {name:'Theresa Webb',   role:'Product Designer',   date:'May 24, 2025',time:'02:00 PM',init:'TW',grad:'linear-gradient(135deg,#ec4899,#f59e0b)'},
+    {name:'Cameron Williamson',role:'Marketing Specialist',date:'May 25, 2025',time:'11:00 AM',init:'CW',grad:'linear-gradient(135deg,#10b981,#06b6d4)'},
+  ];
+  const wrap=document.getElementById('interviews');
+  data.forEach(d=>{
+    wrap.innerHTML+=`
+    <div class="interview-row">
+      <div class="int-avatar" style="background:${d.grad}">${d.init}</div>
+      <div>
+        <div class="int-name">${d.name}</div>
+        <div class="int-role">${d.role}</div>
+        <div class="int-date">📅 ${d.date} &nbsp; 🕐 ${d.time}</div>
+      </div>
+    </div>`;
+  });
+})();
+
+// ── LEAVE DONUT ──
+(function(){
+  const ctx=document.getElementById('leaveChart').getContext('2d');
+  new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      datasets:[{ data:[56,38,32,30], backgroundColor:['#7c5cfc','#3b82f6','#10b981','#f59e0b'], borderWidth:0 }]
+    },
+    options:{ cutout:'68%', plugins:{legend:{display:false},tooltip:{enabled:false}}, responsive:true, maintainAspectRatio:false }
+  });
+})();
+
+// ── ACTIVITY ──
+(function(){
+  const acts=[
+    {dot:'#10b981',text:'New employee Sarah Johnson joined the organization',time:'2h ago'},
+    {dot:'#3b82f6', text:'Leave request approved for Michael Brown',time:'5h ago'},
+    {dot:'#7c5cfc', text:'Interview scheduled with James Anderson',time:'1d ago'},
+    {dot:'#f59e0b', text:'Department "Design" has been created',time:'2d ago'},
+  ];
+  const wrap=document.getElementById('activityList');
+  acts.forEach(a=>{
+    wrap.innerHTML+=`
+    <div class="activity-row">
+      <div class="act-dot" style="background:${a.dot}"></div>
+      <div class="act-text">${a.text}</div>
+      <div class="act-time">${a.time}</div>
+    </div>`;
+  });
+})();
+async function loadCount() {
+  try {
+    const res = await fetch("http://localhost:5000/employees");
+    const data = await res.json();
+
+    let count = 0;
+
+const interval = setInterval(() => {
+
+  count++;
+
+  document.getElementById("empCount").innerText = count;
+
+  if(count >= data.length){
+    clearInterval(interval);
+  }
+
+}, 20);
+  } catch (err) {
+    console.log("COUNT ERROR:", err);
+  }
+}
+setInterval(loadCount, 2000);
+function loadActive() {
+  fetch("http://localhost:5000/employees")
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("activeCount").innerText = data.length;
+    });
+}
+setInterval(loadCount, 2000);
+function logout() {
+  localStorage.removeItem("auth");
+  window.location.href = "login.html";
+}
+async function loadLatestEmployees() {
+  const res = await fetch("http://localhost:5000/employees");
+  const data = await res.json();
+
+  const list = document.getElementById("empList");
+  list.innerHTML = "";
+
+  data.slice(-5).forEach(emp => {
+    list.innerHTML += `
+      <div class="emp-row">
+        <div class="emp-avatar">${emp.name[0]}</div>
+        <div>
+          <div class="emp-name">${emp.name}</div>
+          <div class="emp-role">${emp.role}</div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+loadLatestEmployees();
+function goToDashboard(){
+  window.location.href = "index.html";
+}
+
+function goToEmployees(){
+  window.location.href = "employee_page.html";
+}
+
+function goToDepartments(){
+  window.location.href = "department.html";
+}
+document
+  .getElementById("searchInput")
+  .addEventListener("keypress", function(event) {
+
+    if (event.key === "Enter") {
+
+      const searchValue = this.value;
+
+      window.location.href =
+        "employee_page.html?search=" + searchValue;
+    }
+});
+
+const updatedDate = new Date();
+document.getElementById("nextMonth").onclick = function () {
+
+    monthOffset++;
+    console.log(monthOffset);
+
+    const updatedDate = new Date();
+    updatedDate.setMonth(updatedDate.getMonth() + monthOffset);
+
+    renderCalendar();
+
+document.getElementById("prevMonth").onclick = function () {
+
+    monthOffset--;
+
+    const updatedDate = new Date();
+    updatedDate.setMonth(updatedDate.getMonth() + monthOffset);
+
+    renderCalendar();
+}
+};
+function toggleNotif(){
+
+  const box = document.getElementById("notifBox");
+
+  if(box.style.display === "block"){
+    box.style.display = "none";
+  }
+
+  else{
+    box.style.display = "block";
+  }
+
+}
+</script>
+      <div id="notifBox" class="notif-box">
+
+  <p>📩 New employee joined</p>
+
+  <p>📝 Leave request approved</p>
+
+  <p>📅 Interview scheduled</p>
+  <script>
+const canvas = document.getElementById("particleCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let particles = [];
+
+for(let i=0; i<70; i++){
+  particles.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 2 + 1,
+    dx: (Math.random() - 0.5) * 0.5,
+    dy: (Math.random() - 0.5) * 0.5
+  });
+}
+
+function animateParticles(){
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  particles.forEach(p => {
+
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+
+    ctx.fillStyle = "rgba(124,92,252,0.7)";
+    ctx.fill();
+    particles.forEach(p2 => {
+
+  let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+
+  if(dist < 120){
+
+    ctx.beginPath();
+
+    ctx.moveTo(p.x, p.y);
+
+    ctx.lineTo(p2.x, p2.y);
+
+    ctx.strokeStyle = "rgba(124,92,252,0.08)";
+
+    ctx.stroke();
+
+  }
+
+});
+
+    p.x += p.dx;
+    p.y += p.dy;
+
+    if(p.x < 0 || p.x > canvas.width) p.dx *= -1;
+    if(p.y < 0 || p.y > canvas.height) p.dy *= -1;
+
+  });
+
+  requestAnimationFrame(animateParticles);
+}
+
+animateParticles();
+
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+</script>
+</body>
+</html>

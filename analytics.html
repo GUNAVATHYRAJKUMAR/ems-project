@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>EMS – Analytics</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060812;--s1:#0c0f1e;--s2:#111428;--s3:#161932;--s4:#1c2040;
+  --border:rgba(255,255,255,0.055);--text:#e8eaf6;--muted:#6b7399;
+  --p:#7b6ef6;--p2:#5b4de0;--b:#4f8ef7;--g:#22d3a5;--a:#ffb547;
+  --r:#f7617a;--c:#22d9f7;--pk:#f760c0;--o:#ff8a47;
+  --r14:14px;--r10:10px;
+}
+html,body{height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);overflow-x:hidden}
+
+/* ── PARTICLE CANVAS ── */
+#particleCanvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.45}
+
+/* ── GRID LINES BG ── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(123,110,246,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(123,110,246,.04) 1px,transparent 1px);
+  background-size:48px 48px;
+}
+
+/* ── NAV ── */
+nav{
+  height:64px;background:rgba(12,15,30,.85);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);display:flex;align-items:center;
+  padding:0 28px;gap:24px;position:sticky;top:0;z-index:200;
+  animation:navSlide .6s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes navSlide{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+.brand{display:flex;align-items:center;gap:11px;min-width:170px}
+.brand-icon{
+  width:38px;height:38px;border-radius:11px;
+  background:linear-gradient(135deg,var(--p),var(--b));
+  display:grid;place-items:center;font-size:18px;
+  animation:brandSpin 6s linear infinite;position:relative;
+}
+.brand-icon::after{
+  content:'';position:absolute;inset:-2px;border-radius:13px;
+  background:linear-gradient(135deg,var(--p),var(--b));
+  z-index:-1;filter:blur(8px);opacity:.5;
+}
+@keyframes brandSpin{0%,100%{box-shadow:0 0 16px #7b6ef666}50%{box-shadow:0 0 32px #7b6ef6aa}}
+.brand-text h2{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;letter-spacing:.6px}
+.brand-text p{font-size:10px;color:var(--muted);letter-spacing:.5px}
+.nav-links{display:flex;gap:2px;flex:1;justify-content:center}
+.nav-links a{
+  padding:7px 17px;border-radius:8px;font-size:13px;font-weight:500;
+  color:var(--muted);text-decoration:none;cursor:pointer;
+  transition:all .25s;letter-spacing:.2px;
+}
+.nav-links a.active{
+  background:linear-gradient(135deg,#7b6ef618,#4f8ef718);
+  color:var(--text);border:1px solid rgba(123,110,246,.2);
+}
+.nav-links a:hover:not(.active){background:var(--s2);color:var(--text)}
+.nav-right{display:flex;align-items:center;gap:12px;margin-left:auto}
+.search-box{
+  display:flex;align-items:center;gap:8px;background:var(--s2);
+  border:1px solid var(--border);border-radius:10px;padding:7px 13px;
+  transition:border-color .2s;
+}
+.search-box:focus-within{border-color:var(--p)}
+.search-box input{background:none;border:none;outline:none;color:var(--text);font-size:13px;width:150px;font-family:inherit}
+.search-box input::placeholder{color:var(--muted)}
+.icon-btn{
+  width:36px;height:36px;background:var(--s2);border:1px solid var(--border);
+  border-radius:9px;display:grid;place-items:center;cursor:pointer;
+  transition:all .2s;position:relative;font-size:15px;
+}
+.icon-btn:hover{border-color:var(--p);transform:scale(1.05)}
+.notif-dot{width:7px;height:7px;background:var(--r);border-radius:50%;position:absolute;top:5px;right:5px;border:2px solid var(--s1)}
+.user-chip{
+  display:flex;align-items:center;gap:9px;background:var(--s2);
+  border:1px solid var(--border);border-radius:10px;
+  padding:5px 13px 5px 5px;cursor:pointer;transition:all .2s;
+}
+.user-chip:hover{border-color:var(--p)}
+.uavatar{
+  width:30px;height:30px;border-radius:8px;
+  background:linear-gradient(135deg,var(--p),var(--pk));
+  display:grid;place-items:center;font-size:12px;font-weight:700;
+  font-family:'Syne',sans-serif;
+}
+.uinfo p:first-child{font-size:12px;font-weight:600}
+.uinfo p:last-child{font-size:10px;color:var(--muted)}
+
+/* ── MAIN ── */
+.page-wrap{position:relative;z-index:1;padding:28px 32px;max-width:1520px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+
+/* ── PAGE HEADER ── */
+.page-header{
+  display:flex;align-items:center;justify-content:space-between;
+  animation:fadeUp .7s cubic-bezier(.22,1,.36,1) .1s both;
+}
+.ph-left h1{
+  font-family:'Syne',sans-serif;font-size:28px;font-weight:800;
+  background:linear-gradient(135deg,#e8eaf6,#7b6ef6,#4f8ef7);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;letter-spacing:-.5px;
+}
+.ph-left p{font-size:13px;color:var(--muted);margin-top:4px;letter-spacing:.2px}
+.live-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:linear-gradient(135deg,#22d3a520,#22d3a508);
+  border:1px solid #22d3a530;border-radius:20px;
+  padding:5px 12px;font-size:11px;font-weight:600;color:#22d3a5;
+  margin-top:8px;letter-spacing:.3px;
+}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#22d3a5;animation:livePulse 1.5s infinite}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.ph-right{display:flex;align-items:center;gap:10px}
+.tab-group{display:flex;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px}
+.tab-btn{
+  padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;
+  color:var(--muted);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;
+  border:none;background:none;
+}
+.tab-btn.active{background:linear-gradient(135deg,var(--p),var(--p2));color:#fff}
+.btn-export{
+  display:flex;align-items:center;gap:7px;
+  background:linear-gradient(135deg,var(--p),var(--p2));
+  border:none;border-radius:10px;padding:9px 18px;
+  color:#fff;font-size:13px;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:all .25s;position:relative;overflow:hidden;
+}
+.btn-export::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent,rgba(255,255,255,.15),transparent);
+  transform:translateX(-100%);transition:transform .5s;
+}
+.btn-export:hover::after{transform:translateX(100%)}
+.btn-export:hover{transform:translateY(-2px);box-shadow:0 10px 30px #7b6ef655}
+
+/* ── KPI STRIP ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+.kpi-card{
+  background:var(--s1);border:1px solid var(--border);border-radius:var(--r14);
+  padding:18px;position:relative;overflow:hidden;cursor:default;
+  transition:transform .3s cubic-bezier(.22,1,.36,1),box-shadow .3s;
+}
+.kpi-card:hover{transform:translateY(-5px) scale(1.02);box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.kpi-card::before{
+  content:'';position:absolute;inset:0;opacity:0;
+  transition:opacity .3s;border-radius:var(--r14);
+}
+.kpi-card:hover::before{opacity:1}
+.kpi-glow{
+  position:absolute;bottom:-30px;right:-30px;width:90px;height:90px;
+  border-radius:50%;filter:blur(28px);opacity:.2;transition:opacity .3s;
+}
+.kpi-card:hover .kpi-glow{opacity:.4}
+.kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.kpi-icon{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;font-size:17px}
+.kpi-trend{font-size:11px;font-weight:700;display:flex;align-items:center;gap:3px;padding:2px 7px;border-radius:12px}
+.kpi-trend.up{background:#22d3a518;color:#22d3a5}
+.kpi-trend.down{background:#f7617a18;color:#f7617a}
+.kpi-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:3px}
+.kpi-label{font-size:11px;color:var(--muted);letter-spacing:.3px}
+.kpi-sparkline{position:absolute;bottom:0;right:0;width:90px;height:38px;opacity:.7}
+
+/* ── ROW 2: MAIN CHARTS ── */
+.row2{display:grid;grid-template-columns:1.6fr 1fr;gap:18px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+.row4{display:grid;grid-template-columns:1.2fr 1fr;gap:18px}
+
+/* ── CARD BASE ── */
+.card{
+  background:var(--s1);border:1px solid var(--border);border-radius:var(--r14);
+  padding:22px;position:relative;overflow:hidden;
+}
+.card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(123,110,246,.3),transparent);
+}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;letter-spacing:.2px}
+.card-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.pill{
+  font-size:11px;color:var(--muted);background:var(--s2);
+  border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;
+  transition:all .2s;
+}
+.pill:hover{border-color:var(--p);color:var(--text)}
+.chart-wrap{position:relative}
+.chart-h220{height:220px}
+.chart-h180{height:180px}
+.chart-h160{height:160px}
+
+/* ── WORKFORCE SCORE RING ── */
+.score-center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+.ring-wrap{position:relative;width:160px;height:160px}
+.ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--s3);stroke-width:12}
+.ring-fill{
+  fill:none;stroke-width:12;stroke-linecap:round;
+  stroke-dasharray:440;stroke-dashoffset:440;
+  transition:stroke-dashoffset 2s cubic-bezier(.22,1,.36,1);
+  filter:drop-shadow(0 0 8px currentColor);
+}
+.ring-center-text{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;
+}
+.ring-center-text .big{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;line-height:1}
+.ring-center-text .small{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.5px;margin-top:2px}
+.score-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.score-metric{background:var(--s2);border-radius:9px;padding:10px;text-align:center}
+.score-metric .n{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
+.score-metric .l{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.3px}
+
+/* ── HEATMAP ── */
+.heatmap-grid{display:grid;grid-template-columns:auto repeat(12,1fr);gap:3px;align-items:center}
+.hm-label{font-size:10px;color:var(--muted);padding-right:8px;text-align:right;white-space:nowrap}
+.hm-cell{
+  height:22px;border-radius:4px;cursor:pointer;
+  transition:transform .15s,opacity .15s;
+}
+.hm-cell:hover{transform:scale(1.2);z-index:2;position:relative}
+.hm-months{display:grid;grid-template-columns:auto repeat(12,1fr);gap:3px;margin-bottom:4px}
+.hm-month{font-size:10px;color:var(--muted);text-align:center}
+
+/* ── FUNNEL ── */
+.funnel-wrap{display:flex;flex-direction:column;gap:8px}
+.funnel-stage{
+  display:flex;align-items:center;gap:12px;cursor:pointer;
+  transition:transform .2s;
+}
+.funnel-stage:hover{transform:translateX(4px)}
+.funnel-label{font-size:12px;font-weight:600;width:110px;flex-shrink:0}
+.funnel-bar-wrap{flex:1;height:28px;background:var(--s2);border-radius:6px;overflow:hidden;position:relative}
+.funnel-bar{
+  height:100%;border-radius:6px;display:flex;align-items:center;
+  padding-left:10px;font-size:11px;font-weight:700;color:#fff;
+  width:0;transition:width 1.4s cubic-bezier(.22,1,.36,1);
+}
+.funnel-count{font-size:12px;font-weight:700;width:40px;text-align:right;flex-shrink:0}
+
+/* ── GENDER / AGE DONUT ── */
+.donut-pair{display:flex;align-items:center;gap:16px}
+.donut-rel{position:relative;flex-shrink:0}
+.donut-center-abs{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.donut-center-abs .n{font-family:'Syne',sans-serif;font-size:16px;font-weight:800}
+.donut-center-abs .l{font-size:9px;color:var(--muted);letter-spacing:.3px}
+.legend-list{flex:1}
+.legend-item{display:flex;align-items:center;gap:7px;margin-bottom:8px;font-size:12px;cursor:pointer;transition:opacity .2s}
+.legend-item:hover{opacity:.7}
+.legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.legend-name{flex:1;color:var(--muted)}
+.legend-val{font-weight:700}
+
+/* ── TENURE TABLE ── */
+.tenure-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.tenure-label{font-size:12px;font-weight:600;width:80px;flex-shrink:0;color:var(--muted)}
+.tenure-bar-wrap{flex:1;height:8px;background:var(--s2);border-radius:4px;overflow:hidden}
+.tenure-bar{height:100%;border-radius:4px;width:0;transition:width 1.4s cubic-bezier(.22,1,.36,1)}
+.tenure-pct{font-size:11px;font-weight:700;width:32px;text-align:right;flex-shrink:0}
+
+/* ── TOP PERFORMERS TABLE ── */
+.perf-row{
+  display:flex;align-items:center;gap:10px;padding:9px 0;
+  border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer;
+}
+.perf-row:last-child{border-bottom:none;padding-bottom:0}
+.perf-row:hover{background:var(--s2);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:8px}
+.perf-rank{
+  font-family:'Syne',sans-serif;font-size:13px;font-weight:800;
+  width:20px;flex-shrink:0;
+}
+.perf-avatar{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;font-family:'Syne',sans-serif}
+.perf-name{font-size:12px;font-weight:600;flex:1}
+.perf-dept{font-size:11px;color:var(--muted)}
+.perf-score{
+  font-family:'Syne',sans-serif;font-size:14px;font-weight:800;
+  padding:3px 9px;border-radius:7px;
+}
+.perf-change{font-size:10px;font-weight:600}
+
+/* ── INSIGHT CARDS ── */
+.insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.insight-card{
+  background:linear-gradient(135deg,var(--s2),var(--s1));
+  border:1px solid var(--border);border-radius:var(--r14);
+  padding:18px;position:relative;overflow:hidden;
+  transition:transform .3s,box-shadow .3s;cursor:default;
+}
+.insight-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.4)}
+.insight-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  border-radius:var(--r14) var(--r14) 0 0;
+}
+.ic-icon{font-size:24px;margin-bottom:10px}
+.ic-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:5px}
+.ic-body{font-size:12px;color:var(--muted);line-height:1.6}
+.ic-metric{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-top:8px}
+
+/* ── REALTIME TICKER ── */
+.ticker-wrap{
+  background:var(--s1);border:1px solid var(--border);border-radius:var(--r14);
+  padding:16px 22px;display:flex;align-items:center;gap:20px;overflow:hidden;
+}
+.ticker-label{
+  font-family:'Syne',sans-serif;font-size:11px;font-weight:700;
+  color:var(--p);letter-spacing:.5px;white-space:nowrap;
+  display:flex;align-items:center;gap:7px;
+}
+.ticker-track{flex:1;overflow:hidden;position:relative;height:22px}
+.ticker-inner{
+  display:flex;gap:40px;align-items:center;white-space:nowrap;
+  animation:ticker 30s linear infinite;
+}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-item{
+  display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;
+}
+.tick-up{color:var(--g)}.tick-down{color:var(--r)}.tick-flat{color:var(--muted)}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideL{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideR{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+@keyframes glow{0%,100%{opacity:.6}50%{opacity:1}}
+
+.a-fu{animation:fadeUp .7s cubic-bezier(.22,1,.36,1) both}
+.a-fi{animation:fadeIn .6s ease both}
+.a-sl{animation:slideL .65s cubic-bezier(.22,1,.36,1) both}
+.a-sr{animation:slideR .65s cubic-bezier(.22,1,.36,1) both}
+.a-sc{animation:scaleIn .6s cubic-bezier(.22,1,.36,1) both}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:#23294a;border-radius:3px}
+
+/* ── TOOLTIP ── */
+.tooltip{
+  position:fixed;background:var(--s2);border:1px solid var(--border);
+  border-radius:8px;padding:7px 11px;font-size:11px;pointer-events:none;
+  z-index:999;opacity:0;transition:opacity .15s;white-space:nowrap;
+}
+</style>
+</head>
+<body>
+
+<!-- PARTICLE CANVAS -->
+<canvas id="particleCanvas"></canvas>
+<div class="tooltip" id="tooltip"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="brand">
+    <div class="brand-icon">📊</div>
+    <div class="brand-text"><h2>EMS</h2><p>Employee Management System</p></div>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">Dashboard</a>
+
+<a href="employee_page.html">Employees</a>
+
+<a href="department.html">Departments</a>
+
+<a href="analytics.html">Analytics</a>
+
+<a href="report.html">Reports</a>
+  </div>
+  <div class="nav-right">
+    <div class="search-box">
+      <span style="color:var(--muted);font-size:13px">🔍</span>
+      <input placeholder="Search metrics…"/>
+    </div>
+    <div class="icon-btn">🔔<span class="notif-dot"></span></div>
+    <div class="user-chip">
+      <div class="uavatar">OB</div>
+      <div class="uinfo"><p>Olivia Brooks</p><p>HR Manager</p></div>
+      <span style="color:var(--muted);font-size:11px;margin-left:4px">▾</span>
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- REALTIME TICKER -->
+  <div class="ticker-wrap a-fi" style="animation-delay:.05s">
+    <div class="ticker-label"><span class="live-dot" style="width:6px;height:6px;border-radius:50%;background:var(--g);animation:livePulse 1.5s infinite;display:inline-block"></span>LIVE FEED</div>
+    <div class="ticker-track">
+      <div class="ticker-inner" id="tickerInner"></div>
+    </div>
+  </div>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header a-fu" style="animation-delay:.1s">
+    <div class="ph-left">
+      <h1>People Analytics</h1>
+      <p>Deep intelligence on workforce performance, retention & growth</p>
+      <div class="live-badge"><span class="live-dot"></span>Live · Updated 2 min ago · FY 2025</div>
+    </div>
+    <div class="ph-right">
+      <div class="tab-group">
+        <button class="tab-btn active">Monthly</button>
+        <button class="tab-btn">Quarterly</button>
+        <button class="tab-btn">Yearly</button>
+      </div>
+      <button class="btn-export">⬇ Export PDF</button>
+    </div>
+  </div>
+
+  <!-- KPI STRIP -->
+  <div class="kpi-strip">
+    <div class="kpi-card a-fu" style="animation-delay:.15s;--gc:#7b6ef6">
+      <div class="kpi-glow" style="background:#7b6ef6"></div>
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:#7b6ef618">👥</div>
+        <div class="kpi-trend up">▲ 12.5%</div>
+      </div>
+     <div class="kpi-value" id="employeeCount" style="color:#7b6ef6">0</div>
+      <div class="kpi-label">TOTAL WORKFORCE</div>
+      <canvas class="kpi-sparkline" id="ks1"></canvas>
+    </div>
+    <div class="kpi-card a-fu" style="animation-delay:.2s">
+      <div class="kpi-glow" style="background:#22d3a5"></div>
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:#22d3a518">📈</div>
+        <div class="kpi-trend up">▲ 3.2%</div>
+      </div>
+      <div class="kpi-value" data-target="91" style="color:#22d3a5">0</div>
+      <div class="kpi-label">ENGAGEMENT SCORE</div>
+      <canvas class="kpi-sparkline" id="ks2"></canvas>
+    </div>
+    <div class="kpi-card a-fu" style="animation-delay:.25s">
+      <div class="kpi-glow" style="background:#f7617a"></div>
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:#f7617a18">📉</div>
+        <div class="kpi-trend down">▼ 1.2%</div>
+      </div>
+      <div class="kpi-value" data-target="46" style="color:#f7617a;font-size:22px">0%</div>
+      <div class="kpi-label">ATTRITION RATE</div>
+      <canvas class="kpi-sparkline" id="ks3"></canvas>
+    </div>
+    <div class="kpi-card a-fu" style="animation-delay:.3s">
+      <div class="kpi-glow" style="background:#4f8ef7"></div>
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:#4f8ef718">⏱️</div>
+        <div class="kpi-trend up">▲ 0.4d</div>
+      </div>
+      <div class="kpi-value" data-target="32" style="color:#4f8ef7;font-size:22px">0d</div>
+      <div class="kpi-label">AVG TIME TO HIRE</div>
+      <canvas class="kpi-sparkline" id="ks4"></canvas>
+    </div>
+    <div class="kpi-card a-fu" style="animation-delay:.35s">
+      <div class="kpi-glow" style="background:#ffb547"></div>
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:#ffb54718">🎯</div>
+        <div class="kpi-trend up">▲ 8.1%</div>
+      </div>
+      <div class="kpi-value" data-target="87" style="color:#ffb547;font-size:22px">0%</div>
+      <div class="kpi-label">GOAL COMPLETION</div>
+      <canvas class="kpi-sparkline" id="ks5"></canvas>
+    </div>
+    <div class="kpi-card a-fu" style="animation-delay:.4s">
+      <div class="kpi-glow" style="background:#f760c0"></div>
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:#f760c018">💰</div>
+        <div class="kpi-trend up">▲ 5.4%</div>
+      </div>
+      <div class="kpi-value" data-target="142" style="color:#f760c0;font-size:20px">$0K</div>
+      <div class="kpi-label">AVG SALARY</div>
+      <canvas class="kpi-sparkline" id="ks6"></canvas>
+    </div>
+  </div>
+
+  <!-- ROW 2: WORKFORCE TREND + SCORE RING -->
+  <div class="row2">
+    <div class="card a-fu" style="animation-delay:.45s">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Workforce Growth & Attrition</div>
+          <div class="card-sub">12-month rolling view · 2024–2025</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;display:flex;align-items:center;gap:5px;color:var(--muted)">
+            <span style="width:10px;height:3px;border-radius:2px;background:#7b6ef6;display:inline-block"></span>Headcount
+          </span>
+          <span style="font-size:11px;display:flex;align-items:center;gap:5px;color:var(--muted)">
+            <span style="width:10px;height:3px;border-radius:2px;background:#22d3a5;display:inline-block"></span>New Hires
+          </span>
+          <span style="font-size:11px;display:flex;align-items:center;gap:5px;color:var(--muted)">
+            <span style="width:10px;height:3px;border-radius:2px;background:#f7617a;border-style:dashed;display:inline-block"></span>Exits
+          </span>
+          <div class="pill">Filter ▾</div>
+        </div>
+      </div>
+      <div class="chart-wrap chart-h220"><canvas id="growthChart"></canvas></div>
+    </div>
+    <div class="card a-sl" style="animation-delay:.45s">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Workforce Health Score</div>
+          <div class="card-sub">Composite index · May 2025</div>
+        </div>
+      </div>
+      <div class="score-center">
+        <div class="ring-wrap">
+          <svg viewBox="0 0 160 160">
+            <circle class="ring-bg" cx="80" cy="80" r="64"/>
+            <circle class="ring-fill" id="mainRing" cx="80" cy="80" r="64"
+              stroke="url(#ringGrad)" stroke-dashoffset="440"/>
+            <defs>
+              <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#7b6ef6"/>
+                <stop offset="100%" stop-color="#22d3a5"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="ring-center-text">
+            <div class="big" style="background:linear-gradient(135deg,#7b6ef6,#22d3a5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text" id="ringNum">0</div>
+            <div class="small">/ 100</div>
+          </div>
+        </div>
+        <div class="score-metrics">
+          <div class="score-metric"><div class="n" style="color:#22d3a5">94%</div><div class="l">RETENTION</div></div>
+          <div class="score-metric"><div class="n" style="color:#7b6ef6">91</div><div class="l">ENGAGEMENT</div></div>
+          <div class="score-metric"><div class="n" style="color:#4f8ef7">87%</div><div class="l">GOALS MET</div></div>
+          <div class="score-metric"><div class="n" style="color:#ffb547">4.7</div><div class="l">AVG RATING</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3: HEATMAP + FUNNEL + GENDER -->
+  <div class="row3">
+    <!-- Attendance Heatmap -->
+    <div class="card a-fu" style="animation-delay:.5s">
+      <div class="card-header">
+        <div><div class="card-title">Attendance Heatmap</div><div class="card-sub">Department × Month intensity</div></div>
+        <div class="pill">2025 ▾</div>
+      </div>
+      <div id="heatmapWrap"></div>
+    </div>
+
+    <!-- Hiring Funnel -->
+    <div class="card a-fu" style="animation-delay:.55s">
+      <div class="card-header">
+        <div><div class="card-title">Hiring Funnel</div><div class="card-sub">Current pipeline · All depts</div></div>
+        <div class="pill">This Month ▾</div>
+      </div>
+      <div class="funnel-wrap" id="funnelWrap"></div>
+    </div>
+
+    <!-- Gender + Age Distribution -->
+    <div class="card a-fu" style="animation-delay:.6s">
+      <div class="card-header">
+        <div><div class="card-title">Workforce Diversity</div><div class="card-sub">Gender & age breakdown</div></div>
+      </div>
+      <div class="donut-pair" style="margin-bottom:16px">
+        <div class="donut-rel" style="width:90px;height:90px">
+          <canvas id="genderChart" style="width:90px;height:90px"></canvas>
+          <div class="donut-center-abs"><div class="n">♀♂</div><div class="l">GENDER</div></div>
+        </div>
+        <div class="legend-list">
+          <div class="legend-item"><div class="legend-dot" style="background:#7b6ef6"></div><div class="legend-name">Male</div><div class="legend-val">54%</div></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#f760c0"></div><div class="legend-name">Female</div><div class="legend-val">42%</div></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#22d3f7"></div><div class="legend-name">Other</div><div class="legend-val">4%</div></div>
+        </div>
+      </div>
+      <div class="card-title" style="font-size:12px;margin-bottom:10px">Age Distribution</div>
+      <div id="tenureList"></div>
+    </div>
+  </div>
+
+  <!-- ROW 4: TOP PERFORMERS + DEPT RADAR + SALARY TREND -->
+  <div class="row4">
+    <!-- Top performers -->
+    <div class="card a-fu" style="animation-delay:.6s">
+      <div class="card-header">
+        <div><div class="card-title">Top Performers · May 2025</div><div class="card-sub">Based on composite performance index</div></div>
+        <div class="pill">View All →</div>
+      </div>
+      <div id="perfList"></div>
+    </div>
+
+    <!-- Dept Radar -->
+    <div class="card a-sl" style="animation-delay:.65s">
+      <div class="card-header">
+        <div><div class="card-title">Department Performance Radar</div><div class="card-sub">5 key dimensions</div></div>
+      </div>
+      <div class="chart-wrap chart-h220"><canvas id="radarChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ROW 5: SALARY TREND + LEAVE ANALYSIS -->
+  <div class="row2" style="grid-template-columns:1fr 1fr">
+    <div class="card a-fu" style="animation-delay:.7s">
+      <div class="card-header">
+        <div><div class="card-title">Salary Band Distribution</div><div class="card-sub">Compensation spread by level</div></div>
+        <div class="pill">All Depts ▾</div>
+      </div>
+      <div class="chart-wrap chart-h180"><canvas id="salaryChart"></canvas></div>
+    </div>
+    <div class="card a-fu" style="animation-delay:.75s">
+      <div class="card-header">
+        <div><div class="card-title">Leave Analysis</div><div class="card-sub">Monthly leave distribution</div></div>
+        <div class="pill">2025 ▾</div>
+      </div>
+      <div class="chart-wrap chart-h180"><canvas id="leaveChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- INSIGHT CARDS -->
+  <div class="insight-grid a-fu" style="animation-delay:.8s">
+    <div class="insight-card" style="--ic:#7b6ef6">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7b6ef6,#4f8ef7)"></div>
+      <div class="ic-icon">🏆</div>
+      <div class="ic-title">Retention Champion</div>
+      <div class="ic-body">Design dept leads with lowest attrition at 1.9% — 3.2pts below company avg</div>
+      <div class="ic-metric" style="color:#7b6ef6">1.9% attrition</div>
+    </div>
+    <div class="insight-card" style="--ic:#22d3a5">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#22d3a5,#4f8ef7)"></div>
+      <div class="ic-icon">⚡</div>
+      <div class="ic-title">Hiring Velocity Up</div>
+      <div class="ic-body">Time-to-hire dropped by 6 days QoQ — Engineering now averaging 28 days</div>
+      <div class="ic-metric" style="color:#22d3a5">−6 days avg</div>
+    </div>
+    <div class="insight-card" style="--ic:#ffb547">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#ffb547,#f760c0)"></div>
+      <div class="ic-icon">📣</div>
+      <div class="ic-title">Engagement Alert</div>
+      <div class="ic-body">Operations dept engagement score dipped to 74 — 17pts below avg. Action needed.</div>
+      <div class="ic-metric" style="color:#ffb547">Score: 74/100</div>
+    </div>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<script>
+// ── PARTICLES ──
+(function(){
+  const canvas = document.getElementById('particleCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+  function resize(){ W=canvas.width=innerWidth; H=canvas.height=innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const colors = ['#7b6ef6','#4f8ef7','#22d3a5','#f760c0','#ffb547'];
+  for(let i=0;i<60;i++){
+    particles.push({
+      x:Math.random()*1920, y:Math.random()*1080,
+      r:Math.random()*1.5+.5,
+      vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3,
+      color:colors[Math.floor(Math.random()*colors.length)],
+      opacity:Math.random()*.5+.1
+    });
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // draw connections
+    particles.forEach((p,i)=>{
+      particles.slice(i+1).forEach(q=>{
+        const d=Math.hypot(p.x-q.x,p.y-q.y);
+        if(d<150){
+          ctx.beginPath();
+          ctx.strokeStyle=`rgba(123,110,246,${.12*(1-d/150)})`;
+          ctx.lineWidth=1;
+          ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y);
+          ctx.stroke();
+        }
+      });
+    });
+    particles.forEach(p=>{
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=p.color+(Math.round(p.opacity*255).toString(16).padStart(2,'0'));
+      ctx.fill();
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0)p.x=W; if(p.x>W)p.x=0;
+      if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── TICKER ──
+(function(){
+  const items=[
+    {text:'Engineering headcount',val:'+3 this week',cls:'tick-up'},
+    {text:'Avg engagement score',val:'91.4 ▲',cls:'tick-up'},
+    {text:'Open positions',val:'34 active',cls:'tick-flat'},
+    {text:'Attrition rate',val:'4.6% ▼',cls:'tick-down'},
+    {text:'Time to hire',val:'32 days',cls:'tick-flat'},
+    {text:'New joiners today',val:'5 onboarded',cls:'tick-up'},
+    {text:'Leave requests',val:'12 pending',cls:'tick-flat'},
+    {text:'Goal completion',val:'87% ▲',cls:'tick-up'},
+    {text:'Salary reviews due',val:'28 this month',cls:'tick-flat'},
+    {text:'Training completion',val:'73% ▲',cls:'tick-up'},
+  ];
+  const inner = document.getElementById('tickerInner');
+  // duplicate for seamless loop
+  [...items,...items].forEach(it=>{
+    inner.innerHTML += `<div class="ticker-item"><span style="color:var(--muted)">${it.text}</span><span class="${it.cls}" style="font-weight:700">${it.val}</span><span style="color:var(--border);margin-left:20px">|</span></div>`;
+  });
+})();
+
+// ── COUNT UP ──
+function countUp(el, target, suffix='', duration=1400){
+  const start=performance.now();
+  function step(now){
+    const p=Math.min((now-start)/duration,1);
+    const ease=1-Math.pow(1-p,3);
+    const v=Math.round(ease*target);
+    el.textContent=v.toLocaleString()+suffix;
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ── SPARKLINES ──
+function spark(id, data, color){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const ctx=el.getContext('2d');
+  const g=ctx.createLinearGradient(0,0,0,38);
+  g.addColorStop(0,color+'55'); g.addColorStop(1,color+'00');
+  new Chart(ctx,{type:'line',data:{labels:data.map((_,i)=>i),datasets:[{data,borderColor:color,backgroundColor:g,borderWidth:2,tension:.4,pointRadius:0,fill:true}]},
+    options:{plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}},responsive:false,animation:false}});
+}
+spark('ks1',[900,980,1050,1100,1150,1200,1248],'#7b6ef6');
+spark('ks2',[82,85,86,88,89,90,91],'#22d3a5');
+spark('ks3',[6.5,6,5.8,5.5,5.1,4.8,4.6],'#f7617a');
+spark('ks4',[42,40,38,36,35,33,32],'#4f8ef7');
+spark('ks5',[72,76,79,82,84,86,87],'#ffb547');
+spark('ks6',[110,118,124,128,133,138,142],'#f760c0');
+
+// ── GROWTH CHART ──
+(function(){
+  const ctx=document.getElementById('growthChart').getContext('2d');
+  const labels=['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May'];
+  const g1=ctx.createLinearGradient(0,0,0,220);
+  g1.addColorStop(0,'#7b6ef644');g1.addColorStop(1,'#7b6ef600');
+  new Chart(ctx,{type:'line',
+    data:{labels,datasets:[
+      {label:'Headcount',data:[1050,1080,1100,1120,1140,1160,1180,1200,1218,1230,1242,1248],borderColor:'#7b6ef6',backgroundColor:g1,tension:.4,pointRadius:4,pointBackgroundColor:'#7b6ef6',borderWidth:2.5,fill:true},
+      {label:'New Hires',data:[22,28,25,30,32,35,30,28,35,40,38,42],borderColor:'#22d3a5',backgroundColor:'transparent',tension:.4,pointRadius:3,pointBackgroundColor:'#22d3a5',borderWidth:2},
+      {label:'Exits',    data:[8,10,12,9,14,10,8,11,9,12,10,8],borderColor:'#f7617a',backgroundColor:'transparent',tension:.4,pointRadius:3,pointBackgroundColor:'#f7617a',borderWidth:2,borderDash:[5,4]},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#0c0f1e',borderColor:'#ffffff11',borderWidth:1,titleFont:{family:'Syne',size:12},bodyFont:{size:11}}},
+      scales:{
+        x:{grid:{color:'#ffffff06'},ticks:{color:'#6b7399',font:{size:10}}},
+        y:{grid:{color:'#ffffff06'},ticks:{color:'#6b7399',font:{size:10}}}
+      }
+    }
+  });
+})();
+
+// ── SCORE RING ──
+(function(){
+  const target=88;
+  const circumference=2*Math.PI*64;
+  const ring=document.getElementById('mainRing');
+  const numEl=document.getElementById('ringNum');
+  const offset=circumference*(1-target/100);
+  let start;
+  function animRing(ts){
+    if(!start)start=ts;
+    const p=Math.min((ts-start)/1800,1);
+    const ease=1-Math.pow(1-p,3);
+    const cur=Math.round(ease*target);
+    ring.style.strokeDashoffset=circumference*(1-ease*target/100);
+    numEl.textContent=cur;
+    if(p<1)requestAnimationFrame(animRing);
+  }
+  setTimeout(()=>requestAnimationFrame(animRing),600);
+})();
+
+// ── HEATMAP ──
+(function(){
+  const depts=['Engg','HR','Sales','Finance','Design','Ops'];
+  const months=['J','F','M','A','M','J','J','A','S','O','N','D'];
+  const colors=['#7b6ef6','#4f8ef7','#22d3a5'];
+  const wrap=document.getElementById('heatmapWrap');
+  // month headers
+  let mRow=`<div class="heatmap-grid" style="margin-bottom:3px">
+    <div></div>${months.map(m=>`<div style="font-size:10px;color:var(--muted);text-align:center">${m}</div>`).join('')}</div>`;
+  wrap.innerHTML=mRow;
+  depts.forEach(dept=>{
+    let row=`<div class="heatmap-grid">
+      <div style="font-size:10px;color:var(--muted);padding-right:8px;text-align:right;line-height:22px">${dept}</div>`;
+    months.forEach((_,j)=>{
+      const v=Math.random();
+      const alpha=.15+v*.75;
+      const ci=v>0.66?0:v>0.33?2:1;
+      row+=`<div class="hm-cell" style="background:${colors[ci]};opacity:${alpha}" title="${dept} · ${months[j]}: ${Math.round(v*100)}% attendance"></div>`;
+    });
+    row+='</div>';
+    wrap.innerHTML+=row;
+  });
+  // legend
+  wrap.innerHTML+=`<div style="display:flex;gap:10px;margin-top:10px;align-items:center">
+    <span style="font-size:10px;color:var(--muted)">Low</span>
+    ${['#7b6ef6','#4f8ef7','#22d3a5'].map(c=>`<div style="width:20px;height:8px;border-radius:2px;background:${c};opacity:.8"></div>`).join('')}
+    <span style="font-size:10px;color:var(--muted)">High</span>
+  </div>`;
+})();
+
+// ── HIRING FUNNEL ──
+(function(){
+  const stages=[
+    {label:'Applications',count:486,pct:100,color:'#7b6ef6'},
+    {label:'Screening',   count:312,pct:64, color:'#4f8ef7'},
+    {label:'Assessment',  count:198,pct:41, color:'#22d3f7'},
+    {label:'Interview',   count:124,pct:26, color:'#22d3a5'},
+    {label:'Offer',       count:52, pct:11, color:'#ffb547'},
+    {label:'Hired',       count:34, pct:7,  color:'#f760c0'},
+  ];
+  const wrap=document.getElementById('funnelWrap');
+  stages.forEach(s=>{
+    wrap.innerHTML+=`<div class="funnel-stage">
+      <div class="funnel-label">${s.label}</div>
+      <div class="funnel-bar-wrap">
+        <div class="funnel-bar" data-pct="${s.pct}" style="background:linear-gradient(90deg,${s.color},${s.color}99)">${s.pct}%</div>
+      </div>
+      <div class="funnel-count" style="color:${s.color}">${s.count}</div>
+    </div>`;
+  });
+  setTimeout(()=>{
+    document.querySelectorAll('.funnel-bar[data-pct]').forEach(b=>{
+      b.style.width=b.dataset.pct+'%';
+    });
+  },700);
+})();
+
+// ── GENDER DONUT ──
+(function(){
+  const ctx=document.getElementById('genderChart').getContext('2d');
+  new Chart(ctx,{type:'doughnut',
+    data:{datasets:[{data:[54,42,4],backgroundColor:['#7b6ef6','#f760c0','#22d3f7'],borderWidth:0,hoverOffset:4}]},
+    options:{cutout:'68%',plugins:{legend:{display:false},tooltip:{enabled:false}},responsive:false,maintainAspectRatio:false,animation:{duration:1400}}
+  });
+})();
+
+// ── AGE / TENURE ──
+(function(){
+  const bands=[
+    {label:'18–25',pct:18,color:'#22d3f7'},
+    {label:'26–32',pct:32,color:'#7b6ef6'},
+    {label:'33–40',pct:28,color:'#4f8ef7'},
+    {label:'41–50',pct:16,color:'#22d3a5'},
+    {label:'51+',  pct:6, color:'#ffb547'},
+  ];
+  const wrap=document.getElementById('tenureList');
+  bands.forEach(b=>{
+    wrap.innerHTML+=`<div class="tenure-row">
+      <div class="tenure-label">${b.label}</div>
+      <div class="tenure-bar-wrap"><div class="tenure-bar" data-pct="${b.pct}" style="background:${b.color}"></div></div>
+      <div class="tenure-pct" style="color:${b.color}">${b.pct}%</div>
+    </div>`;
+  });
+  setTimeout(()=>{
+    document.querySelectorAll('.tenure-bar[data-pct]').forEach(b=>{ b.style.width=b.dataset.pct+'%'; });
+  },800);
+})();
+
+// ── TOP PERFORMERS ──
+(function(){
+  const people=[
+    {rank:'01',name:'Brooklyn Simmons',dept:'Engineering', score:98,change:'+3',grad:'linear-gradient(135deg,#7b6ef6,#4f8ef7)',init:'BS',color:'#22d3a5'},
+    {rank:'02',name:'Dianne Russell',  dept:'Design',      score:96,change:'+1',grad:'linear-gradient(135deg,#ec4899,#f760c0)',init:'DR',color:'#22d3a5'},
+    {rank:'03',name:'Jacob Jones',     dept:'Design',      score:95,change:'+2',grad:'linear-gradient(135deg,#7b6ef6,#f760c0)',init:'JJ',color:'#22d3a5'},
+    {rank:'04',name:'Jenny Wilson',    dept:'HR',          score:94,change:'−1',grad:'linear-gradient(135deg,#f59e0b,#f97316)',init:'JW',color:'#f7617a'},
+    {rank:'05',name:'Cody Fisher',     dept:'Engineering', score:93,change:'+4',grad:'linear-gradient(135deg,#22d3a5,#4f8ef7)',init:'CF',color:'#22d3a5'},
+    {rank:'06',name:'Esther Howard',   dept:'Analytics',   score:91,change:'+1',grad:'linear-gradient(135deg,#22d3f7,#4f8ef7)',init:'EH',color:'#22d3a5'},
+    {rank:'07',name:'Robert Fox',      dept:'Sales',       score:90,change:'−2',grad:'linear-gradient(135deg,#ffb547,#f97316)',init:'RF',color:'#f7617a'},
+  ];
+  const wrap=document.getElementById('perfList');
+  people.forEach((p,i)=>{
+    const rankColor=i===0?'#ffb547':i===1?'#94a3b8':i===2?'#b45309':'var(--muted)';
+    wrap.innerHTML+=`<div class="perf-row">
+      <div class="perf-rank" style="color:${rankColor}">${p.rank}</div>
+      <div class="perf-avatar" style="background:${p.grad}">${p.init}</div>
+      <div style="flex:1"><div class="perf-name">${p.name}</div><div class="perf-dept">${p.dept}</div></div>
+      <div class="perf-change" style="color:${p.color};margin-right:6px">${p.change}</div>
+      <div class="perf-score" style="background:${p.score>=95?'#7b6ef620':p.score>=92?'#22d3a520':'#4f8ef720'};color:${p.score>=95?'#7b6ef6':p.score>=92?'#22d3a5':'#4f8ef7'}">${p.score}</div>
+    </div>`;
+  });
+})();
+
+// ── RADAR CHART ──
+(function(){
+  const ctx=document.getElementById('radarChart').getContext('2d');
+  new Chart(ctx,{type:'radar',
+    data:{
+      labels:['Productivity','Retention','Engagement','Hiring Speed','Training'],
+      datasets:[
+        {label:'Engineering',data:[94,96,91,82,88],borderColor:'#7b6ef6',backgroundColor:'#7b6ef618',pointBackgroundColor:'#7b6ef6',borderWidth:2,pointRadius:4},
+        {label:'Sales',      data:[88,84,87,79,72],borderColor:'#22d3a5',backgroundColor:'#22d3a518',pointBackgroundColor:'#22d3a5',borderWidth:2,pointRadius:4},
+        {label:'HR',         data:[82,92,94,88,96],borderColor:'#ffb547',backgroundColor:'#ffb54718',pointBackgroundColor:'#ffb547',borderWidth:2,pointRadius:4},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#6b7399',boxWidth:8,font:{size:10},padding:10}}},
+      scales:{r:{
+        grid:{color:'#ffffff08'},
+        pointLabels:{color:'#6b7399',font:{size:10}},
+        ticks:{display:false},
+        suggestedMin:60,suggestedMax:100,
+      }}
+    }
+  });
+})();
+
+// ── SALARY CHART ──
+(function(){
+  const ctx=document.getElementById('salaryChart').getContext('2d');
+  const g=ctx.createLinearGradient(0,0,0,180);
+  g.addColorStop(0,'#7b6ef655');g.addColorStop(1,'#7b6ef600');
+  new Chart(ctx,{type:'bar',
+    data:{
+      labels:['<$50K','$50–80K','$80–110K','$110–150K','$150–200K','>$200K'],
+      datasets:[{label:'Employees',data:[45,198,312,380,240,73],backgroundColor:['#4f8ef7cc','#7b6ef6cc','#22d3a5cc','#ffb547cc','#f760c0cc','#f7617acc'],borderRadius:6,borderSkipped:false}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#0c0f1e',borderColor:'#ffffff11',borderWidth:1}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#6b7399',font:{size:10}}},
+        y:{grid:{color:'#ffffff06'},ticks:{color:'#6b7399',font:{size:10}}}
+      }
+    }
+  });
+})();
+
+// ── LEAVE CHART ──
+(function(){
+  const ctx=document.getElementById('leaveChart').getContext('2d');
+  const labels=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  new Chart(ctx,{type:'bar',
+    data:{labels,datasets:[
+      {label:'Casual',  data:[45,50,42,55,56,60,70,65,52,48,44,40],backgroundColor:'#7b6ef699',borderRadius:4,borderSkipped:false,stack:'leave'},
+      {label:'Sick',    data:[20,25,30,22,38,28,32,30,25,22,20,18],backgroundColor:'#4f8ef799',borderRadius:4,borderSkipped:false,stack:'leave'},
+      {label:'Paid',    data:[30,28,35,30,32,35,38,35,30,28,26,24],backgroundColor:'#22d3a599',borderRadius:4,borderSkipped:false,stack:'leave'},
+      {label:'Other',   data:[10,12,8,14,30,12,14,12,10,10,8,8],backgroundColor:'#ffb54799',borderRadius:4,borderSkipped:false,stack:'leave'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#6b7399',boxWidth:8,font:{size:10},padding:10}}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#6b7399',font:{size:10}},stacked:true},
+        y:{grid:{color:'#ffffff06'},ticks:{color:'#6b7399',font:{size:10}},stacked:true}
+      }
+    }
+  });
+})();
+
+// ── TAB TOGGLE ──
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// ── INTERSECTION OBSERVER ──
+const observer=new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      const el=entry.target;
+      // trigger count-ups
+      el.querySelectorAll('[data-target]').forEach(e=>{
+        const t=parseInt(e.dataset.target);
+        const suffix=e.textContent.replace(/[0-9,]/g,'');
+        countUp(e,t,suffix);
+      });
+      // trigger bars
+      el.querySelectorAll('[data-pct]').forEach(b=>{ b.style.width=b.dataset.pct+'%'; });
+      observer.unobserve(el);
+    }
+  });
+},{threshold:0.1});
+
+// trigger KPI counts on load
+setTimeout(()=>{
+  document.querySelectorAll('.kpi-value[data-target]').forEach(el=>{
+    const t=parseInt(el.dataset.target);
+    const suffix=el.textContent.replace(/[0-9]/g,'');
+    countUp(el,t,suffix);
+  });
+},500);
+
+document.querySelectorAll('.card,.kpi-card').forEach(el=>observer.observe(el));
+fetch("http://localhost:5000/employees/count")
+  .then(res => res.json())
+  .then(data => {
+      document.getElementById("employeeCount").innerText = data.count;
+  });
+</script>
+</body>
+</html>
