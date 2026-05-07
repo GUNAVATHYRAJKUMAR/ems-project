@@ -1060,7 +1060,7 @@ function logout(){
 })();
 async function loadCount() {
   try {
-    const res = await fetch("https://your-render-url.onrender.com/employees");
+    const res = await fetch("https://ems-project-ozkw.onrender.com/employees");
     const data = await res.json();
 
     let count = 0;
@@ -1084,7 +1084,7 @@ setInterval(loadCount, 2000);
 setInterval(loadActive, 2000);
 function loadActive() {
 
-  fetch("https://your-render-url.onrender.com/employees")
+  fetch("https://ems-project-ozkw.onrender.com/employees")
     .then(res => res.json())
     .then(data => {
 
@@ -1113,7 +1113,7 @@ function logout() {
   window.location.href = "login.html";
   async function loadHires() {
 
-  const res = await fetch("https://your-render-url.onrender.com/employees");
+  const res = await fetch("https://ems-project-ozkw.onrender.com/employees");
 
   const data = await res.json();
 
@@ -1149,7 +1149,7 @@ const interval = setInterval(() => {
 }
 }
 async function loadLatestEmployees() {
-  const res = await fetch("https://your-render-url.onrender.com/employees");
+  const res = await fetch("https://ems-project-ozkw.onrender.com/employees");
   const data = await res.json();
 
   const list = document.getElementById("empList");
