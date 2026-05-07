@@ -125,47 +125,26 @@ app.post("/login", (req, res) => {
 
   const { email, password } = req.body;
 
-  db.query(
+  if(email === "admin@gmail.com" && password === "1234"){
 
-    "SELECT * FROM users WHERE email = ? AND password = ?",
-
-    [email, password],
-
-    (err, result) => {
-
-      if(err){
-
-        console.log("LOGIN ERROR:", err);
-
-        res.status(500).json({
-          success: false
-        });
-
+    res.json({
+      success: true,
+      user: {
+        email: email
       }
+    });
 
-      else if(result.length > 0){
+  }
 
-        res.json({
-          success: true,
-          user: result[0]
-        });
+  else{
 
-      }
+    res.json({
+      success: false
+    });
 
-      else{
-
-        res.json({
-          success: false
-        });
-
-      }
-
-    }
-
-  );
+  }
 
 });
-
 /* ===== START SERVER ===== */
 
 app.listen(5000, () => {
