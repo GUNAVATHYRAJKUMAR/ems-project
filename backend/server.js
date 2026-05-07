@@ -26,13 +26,6 @@ db.connect((err) => {
     console.log("✅ MySQL connected");
   }
 });
-db.connect((err) => {
-  if (err) {
-    console.log("❌ MySQL error:", err);
-  } else {
-    console.log("✅ MySQL connected");
-  }
-});
 
 /* ===== ROUTES ===== */
 
@@ -54,35 +47,57 @@ app.get("/employees", (req, res) => {
 });
 // ADD employee (TO DATABASE)
 app.post("/employees", (req, res) => {
-  const { name, role } = req.body;
+  const { name, role, department } = req.body;
 
-  if (!name || !role) {
+  if (!name || !role || !department) {
     return res.status(400).json({ error: "Missing fields" });
   }
 
   db.query(
-    "INSERT INTO employee (name, role) VALUES (?, ?)",
-    [name, role],
+    "INSERT INTO employees(name, role, department) VALUES (?, ?, ?)",
+    [name, role, department],
     (err, result) => {
       if (err) {
         console.log("POST ERROR:", err);
         res.status(500).json({ error: "POST failed" });
       } else {
-        res.json({ id: result.insertId, name, role });
+        res.json({ id: result.insertId, name, role, department });
       }
     }
   );
 });
 
 // DELETE employee
+app.delete("/employees/:id", (req, res) => {
+
+  const id = req.params.id;
+
+  db.query(
+    "DELETE FROM employees WHERE id = ?",
+    [id],
+    (err, result) => {
+
+      if(err){
+        console.log("DELETE ERROR:", err);
+        res.status(500).json({ error: "DELETE failed" });
+      }
+
+      else{
+        res.json({ success: true });
+      }
+
+    }
+  );
+
+});
 // UPDATE employee
 app.put("/employees/:id", (req, res) => {
   const id = req.params.id;
-  const { name, role } = req.body;
+  const { name, role, department } = req.body;
 
   db.query(
-    "UPDATE employee SET name = ?, role = ? WHERE id = ?",
-    [name, role, id],
+    "UPDATE employees SET name = ?, role = ?, department = ? WHERE id = ?",
+    [name, role, department, id],
     (err, result) => {
       if (err) {
         console.log("UPDATE ERROR:", err);
@@ -107,20 +122,82 @@ app.get("/employees/count", (req, res) => {
 
 // LOGIN
 app.post("/login", (req, res) => {
+
   const { email, password } = req.body;
 
-  if (email === "admin@gmail.com" && password === "1234") {
-    res.json({ success: true });
-  } else {
-    res.json({ success: false });
-  }
+  db.query(
+
+    "SELECT * FROM users WHERE email = ? AND password = ?",
+
+    [email, password],
+
+    (err, result) => {
+
+      if(err){
+
+        console.log("LOGIN ERROR:", err);
+
+        res.status(500).json({
+          success: false
+        });
+
+      }
+
+      else if(result.length > 0){
+
+        res.json({
+          success: true,
+          user: result[0]
+        });
+
+      }
+
+      else{
+
+        res.json({
+          success: false
+        });
+
+      }
+
+    }
+
+  );
+
 });
 
 /* ===== START SERVER ===== */
 
 app.listen(5000, () => {
-  console.log("🚀 Server running on http://localhost:5000");
+  const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
 });
 db.query("SELECT DATABASE() AS db", (err, result) => {
   console.log("CONNECTED DB:", result);
+});
+app.get("/attendance-summary", (req, res) => {
+
+  const query = `
+    SELECT 
+      status,
+      COUNT(*) AS count
+    FROM attendance
+    GROUP BY status
+  `;
+
+  db.query(query, (err, result) => {
+
+    if(err){
+      res.status(500).json(err);
+    }
+
+    else{
+      res.json(result);
+    }
+
+  });
+
 });
