@@ -56,32 +56,53 @@
 </div>
 
 <script>
-async function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+async function login(){
 
-  try {
-    const res = await fetch("http://localhost:5000/login", {
+  const email =
+    document.getElementById("email").value;
+
+  const password =
+    document.getElementById("password").value;
+
+  const response = await fetch(
+    "https://your-render-url.onrender.com/login",
+    {
+
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
+
+      headers:{
+        "Content-Type":"application/json"
       },
-      body: JSON.stringify({ email, password })
-    });
 
-    const data = await res.json();
+      body: JSON.stringify({
+        email,
+        password
+      })
 
-    if (data.success) {
-      localStorage.setItem("auth", "true");
-      window.location.href = "index.html";
-    } else {
-      alert("Invalid login");
     }
+  );
 
-  } catch (error) {
-    alert("Server not running!");
-    console.error(error);
+  const data = await response.json();
+
+  if(data.success){
+
+    localStorage.setItem(
+      "user",
+      JSON.stringify(data.user)
+    );
+
+    alert("Login successful 😄");
+
+    window.location.href = "index.html";
+
   }
+
+  else{
+
+    alert("Invalid email or password");
+
+  }
+
 }
 </script>
 

@@ -7,6 +7,119 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
+  /* MODAL */
+
+.modal{
+  position: fixed;
+  inset: 0;
+  background: rgba(3,6,20,0.72);
+  backdrop-filter: blur(12px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn .25s ease;
+}
+
+.modal-box{
+  width: 440px;
+  background: linear-gradient(
+    145deg,
+    rgba(20,24,45,0.96),
+    rgba(10,14,30,0.96)
+  );
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  border-radius: 30px;
+
+  padding: 34px;
+
+  box-shadow:
+    0 0 40px rgba(124,92,252,0.18),
+    0 20px 60px rgba(0,0,0,0.55);
+
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  animation: popup .28s ease;
+}
+
+.modal-box h2{
+  font-size: 32px;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.modal-box input{
+  width: 100%;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.05);
+  color: white;
+  font-size: 15px;
+  outline: none;
+}
+
+.modal-box input:focus{
+  border-color: #7c5cfc;
+  box-shadow:
+    0 0 20px rgba(124,92,252,0.28);
+}
+
+.modal-actions{
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.cancel-btn{
+  padding: 14px 22px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: transparent;
+  color: white;
+  cursor: pointer;
+}
+
+.save-btn{
+  padding: 14px 24px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg,#7c5cff,#5b3df5);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 24px rgba(124,92,252,0.35);
+}
+
+@keyframes popup{
+  from{
+    transform: scale(.9) translateY(20px);
+    opacity: 0;
+  }
+
+  to{
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn{
+  from{
+    opacity: 0;
+  }
+
+  to{
+    opacity: 1;
+  }
+}
   #particleCanvas{
   position:fixed;
   inset:0;
@@ -30,7 +143,7 @@ body::before{
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0d0f1a;--surface:#131629;--surface2:#181c30;--border:rgba(255,255,255,0.06);
+  --bg: radial-gradient(circle at top, #14192f 0%, #0b1020 45%, #070b16 100%);--surface:#131629;--surface2:#181c30;--border:rgba(255,255,255,0.06);
   --text:#e2e8f0;--muted:#8492a6;--purple:#7c5cfc;--blue:#3b82f6;--green:#10b981;
   --amber:#f59e0b;--red:#ef4444;--cyan:#06b6d4;--pink:#ec4899;--radius:14px;
 }
@@ -44,8 +157,16 @@ nav{height:64px;background:var(--surface);border-bottom:1px solid var(--border);
 .brand-text p{font-size:10px;color:var(--muted);letter-spacing:.4px}
 .nav-links{display:flex;gap:4px;flex:1;justify-content:center}
 .nav-links a{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;cursor:pointer;transition:all .2s}
-.nav-links a.active{background:linear-gradient(135deg,#7c5cfc22,#3b82f622);color:var(--text)}
-.nav-links a:hover:not(.active){background:var(--surface2);color:var(--text)}
+.nav-links a.active {
+  background: linear-gradient(135deg,#7c5cfc33,#3b82f633);
+
+  color: #ffffff;
+
+  box-shadow:
+    0 0 18px rgba(124,92,252,0.35);
+
+  border: 1px solid rgba(124,92,252,0.25);
+}nav-links a:hover:not(.active){background:var(--surface2);color:var(--text)}
 .nav-right{display:flex;align-items:center;gap:14px;margin-left:auto}
 .search-box{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 12px}
 .search-box input{background:none;border:none;outline:none;color:var(--text);font-size:13px;width:160px}
@@ -239,7 +360,7 @@ tbody td{padding:12px 14px;font-size:13px;vertical-align:middle}
       <h1>Employees</h1>
       <p>Manage and view all employee information</p>
     </div>
-    <button class="btn-primary" onclick="addEmployee()">＋ Add Employee</button>
+    <button class="btn-primary" onclick="openModal()">＋ Add Employee</button>
   </div>
 
   <!-- STAT CARDS -->
@@ -397,19 +518,61 @@ tbody td{padding:12px 14px;font-size:13px;vertical-align:middle}
 
 <!-- ONLY SHOWING CHANGED SCRIPT PART (YOUR UI REMAINS SAME ABOVE) -->
 <script>
-async function editEmployee(id){
-  const name = prompt("New name:");
-  const role = prompt("New role:");
+  function openModal(){
 
-  if(!name || !role) return;
+  document.getElementById("employeeModal").style.display = "flex";
 
-  await fetch(`http://localhost:5000/employees/${id}`,{
-    method:"PUT",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ name, role })
+}
+
+function closeModal(){
+
+  const modal = document.getElementById("employeeModal");
+
+  if(modal){
+    modal.style.display = "none";
+  }
+
+}
+async function saveEmployee(){
+
+  console.log("SAVE CLICKED");
+
+  const name = document.getElementById("empName").value;
+
+  const role = document.getElementById("empRole").value;
+
+  const department = document.getElementById("empDept").value;
+
+  if(!name || !role || !department){
+
+    alert("Please fill all fields");
+
+    return;
+  }
+
+  await fetch("http://localhost:5000/employees", {
+
+    method: "POST",
+
+    headers:{
+      "Content-Type":"application/json"
+    },
+
+    body: JSON.stringify({
+      name,
+      role,
+      department
+    })
+
   });
 
+  closeModal();
+  document.getElementById("empName").value = "";
+document.getElementById("empRole").value = "";
+document.getElementById("empDept").value = "";
+
   loadEmployees();
+
 }
 // ================= LOAD DATA =================
 async function loadEmployees() {
@@ -457,10 +620,12 @@ function buildTable(data){
         </div>
       </td>
 
-      <td>${e.status || "Active"}</td>
+    <td>${e.status || "Active"}</td>
 
-      <td>
-       <div class="action-btns">
+<td>${e.join_date || "N/A"}</td>
+
+<td>
+<div class="action-btns"> 
   <div class="action-btn edit-btn" onclick="editEmployee('${e.id}')" title="Edit">✏️</div>
   <div class="action-btn delete-btn" onclick="deleteEmployee('${e.id}')" title="Delete">🗑️</div>
 </div>
@@ -480,27 +645,7 @@ async function deleteEmployee(id){
 
 // ================= INIT =================
 loadEmployees();
-async function addEmployee() {
-  const name = prompt("Enter name:");
-  const role = prompt("Enter role:");
-  const dept = prompt("Enter department:");
 
-  if (!name || !role || !dept) return;
-
-  await fetch("http://localhost:5000/employees", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-   body: JSON.stringify({
-  name,
-  role,
-  department: dept,
-  })
-});
-
-  loadEmployees();
-}
 function goToDashboard(){
   window.location.href = "index.html";
 }
@@ -594,6 +739,33 @@ window.addEventListener("resize", () => {
   canvas.height = window.innerHeight;
 });
 </script>
+<div class="modal" id="employeeModal">
+
+  <div class="modal-box">
+
+    <h2>Add Employee</h2>
+
+    <input type="text" id="empName" placeholder="Employee Name">
+
+    <input type="text" id="empRole" placeholder="Employee Role">
+
+    <input type="text" id="empDept" placeholder="Department">
+
+    <div class="modal-actions">
+
+      <button class="cancel-btn" onclick="closeModal()">
+        Cancel
+      </button>
+
+      <button class="save-btn" onclick="saveEmployee()">
+        Save Employee
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
 
 </body>
 </html>

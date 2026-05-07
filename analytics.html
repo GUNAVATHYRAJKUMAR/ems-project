@@ -58,9 +58,15 @@ nav{
   color:var(--muted);text-decoration:none;cursor:pointer;
   transition:all .25s;letter-spacing:.2px;
 }
-.nav-links a.active{
-  background:linear-gradient(135deg,#7b6ef618,#4f8ef718);
-  color:var(--text);border:1px solid rgba(123,110,246,.2);
+.nav-links a.active {
+  background: linear-gradient(135deg,#7c5cfc33,#3b82f633);
+
+  color: #ffffff;
+
+  box-shadow:
+    0 0 18px rgba(124,92,252,0.35);
+
+  border: 1px solid rgba(124,92,252,0.25);
 }
 .nav-links a:hover:not(.active){background:var(--s2);color:var(--text)}
 .nav-right{display:flex;align-items:center;gap:12px;margin-left:auto}
